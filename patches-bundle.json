@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-06T15:58:28",
-  "description": "Experimental DC Inside 5.3.6 clean-up and optional display controls; device test pending",
-  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.0.1/patches-1.0.1.mpp",
+  "created_at": "2026-10-06T17:56:57Z",
+  "description": "Experimental DC Inside 5.3.6 cleanup with in-app Morphe settings and offline IP-range hints",
+  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.1.0/patches-1.1.0.mpp",
   "signature_download_url": "",
-  "version": "1.0.1"
+  "version": "1.1.0"
 }

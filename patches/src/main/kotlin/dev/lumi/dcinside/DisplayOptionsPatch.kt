@@ -3,7 +3,6 @@ package dev.lumi.dcinside
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
-import app.morphe.patcher.patch.booleanOption
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
@@ -12,32 +11,17 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
-/** Opt-in display choices for the verified 5.3.6 adapter. */
+/** Runtime home display choices for the verified 5.3.6 adapter. */
 @Suppress("unused")
 val homeDisplayOptionsPatch = bytecodePatch(
-    name = "Hide home screen sections",
-    description = "Choose which home sections to hide when patching the APK (5.3.6).",
-    default = false,
+    name = "앱 안에서 홈 화면 설정",
+    description = "앱의 Morphe 설정에서 홈 화면 영역을 각각 숨길 수 있습니다.",
+    default = true,
 ) {
     compatibleWith(compatibility)
     dependsOn(dcInsidePersonalPatch)
 
-    val search = booleanOption("hideHomeSearch", false, title = "Hide search/menu")
-    val recent = booleanOption("hideHomeRecent", false, title = "Hide recent galleries")
-    val recommendedGalleries = booleanOption("hideHomeRecommendedGalleries", false, title = "Hide recommended galleries")
-    val ranking = booleanOption("hideHomeRanking", false, title = "Hide gallery ranking")
-    val liveBest = booleanOption("hideHomeLiveBest", false, title = "Hide live best")
-    val recommendedPosts = booleanOption("hideHomeRecommendedPosts", false, title = "Hide recommended posts")
-
     execute {
-        val mask = (if (search.value == true) 1 else 0) or
-            (if (recent.value == true) 2 else 0) or
-            (if (recommendedGalleries.value == true) 4 else 0) or
-            (if (ranking.value == true) 8 else 0) or
-            (if (liveBest.value == true) 16 else 0) or
-            (if (recommendedPosts.value == true) 32 else 0)
-        if (mask == 0) return@execute
-
         val update = Fingerprint(
             definingClass = "Lcom/dcinside/app/main/adapter/f;",
             name = "Z",
@@ -45,8 +29,7 @@ val homeDisplayOptionsPatch = bytecodePatch(
             returnType = "V",
         ).method
         update.addInstructions(0, """
-            const/16 v0, 0x${mask.toString(16)}
-            invoke-static {p1, v0}, Llocal/privacy/HomeFilter;->filter(Ljava/util/List;I)Ljava/util/List;
+            invoke-static {p1}, Llocal/privacy/HomeFilter;->filter(Ljava/util/List;)Ljava/util/List;
             move-result-object p1
         """.trimIndent())
     }
@@ -55,9 +38,9 @@ val homeDisplayOptionsPatch = bytecodePatch(
 /** Based on the page-separator behavior in Ample's GPLv3 DC Inside patch. */
 @Suppress("unused")
 val hidePageIndicatorsPatch = bytecodePatch(
-    name = "Hide post list page indicators",
-    description = "Hide Page N labels between post-list pages and in search results (5.3.6).",
-    default = false,
+    name = "글 목록 페이지 표시 설정",
+    description = "앱의 Morphe 설정에서 글 목록과 검색 결과의 Page N 표시를 숨길 수 있습니다.",
+    default = true,
 ) {
     compatibleWith(compatibility)
     dependsOn(dcInsidePersonalPatch)

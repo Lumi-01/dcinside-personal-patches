@@ -10,7 +10,8 @@ public final class HomeFilter {
 
     private HomeFilter() { }
 
-    public static List<?> filter(List<?> items, int mask) {
+    public static List<?> filter(List<?> items) {
+        int mask = SettingsState.homeMask();
         if (items == null || items.isEmpty() || mask == 0) return items;
         ArrayList<Object> result = new ArrayList<>(items.size());
         for (Object item : items) {

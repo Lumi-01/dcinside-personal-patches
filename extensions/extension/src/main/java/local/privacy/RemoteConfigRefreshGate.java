@@ -15,6 +15,7 @@ public final class RemoteConfigRefreshGate {
     }
 
     public static boolean shouldRefreshOnHomeStop() {
+        if (!SettingsState.get("reduce_config_refresh")) return true;
         try {
             Class<?> prefs = Class.forName("com.dcinside.app.util.hr");
             Object instance = prefs.getField("a").get(null);

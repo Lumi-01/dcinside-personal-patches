@@ -8,7 +8,6 @@ import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.patch.booleanOption
 import app.morphe.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -35,6 +34,12 @@ private const val LOCAL_DIGEST = "local/privacy/MessageDigest"
 
 private val nativeCertificatePatch = resourcePatch {
     execute {
+        val prefixTable = Class.forName("dev.lumi.dcinside.DcInsidePatchKt")
+            .getResourceAsStream("/dcinside/lumi_ip_prefixes.txt")
+            ?: error("IP prefix table missing from bundle")
+        val prefixTarget = this["res/raw/lumi_ip_prefixes.txt"]
+        prefixTarget.parentFile?.mkdirs()
+        prefixTable.use { source -> prefixTarget.outputStream().use { source.copyTo(it) } }
         check(JNI_DIGEST.length == LOCAL_DIGEST.length)
         val paths = listApkEntries("lib/").filter { it.endsWith("/libnative-lib.so") }
         check(paths.isNotEmpty()) { "Native identity library missing; app version needs review" }
@@ -48,6 +53,13 @@ private val nativeCertificatePatch = resourcePatch {
             file.writeBytes(updated)
         }
         document("AndroidManifest.xml").use { document ->
+            val application = document.documentElement.getElementsByTagName("application").item(0) as Element
+            val activity = document.createElement("activity")
+            activity.setAttribute("android:name", "local.privacy.MorpheSettingsActivity")
+            activity.setAttribute("android:exported", "false")
+            activity.setAttribute("android:excludeFromRecents", "true")
+            activity.setAttribute("android:theme", "@android:style/Theme.DeviceDefault.Light")
+            application.appendChild(activity)
             val providers = document.getElementsByTagName("provider")
             for (index in providers.length - 1 downTo 0) {
                 val item = providers.item(index) as Element
@@ -152,16 +164,20 @@ val dcInsidePersonalPatch = bytecodePatch(
     compatibleWith(compatibility)
     dependsOn(nativeCertificatePatch)
     extendWith("extensions/extension.mpe")
-    val reduceRefresh = booleanOption(
-        "reduceConfigRefresh", false,
-        title = "Reduce redundant remote configuration refreshes",
-        description = "May delay server setting changes; opt in only after checking your use case.",
-    )
-
     execute {
         // Initialize the certificate adapter before native app-identity calls.
         val appCreate = Fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "onCreate", returnType = "V").method
         appCreate.addInstructions(0, "invoke-static {p0}, $CERT->init(Landroid/content/Context;)V")
+        appCreate.addInstructions(0, "invoke-static {p0}, Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V")
+        val settingsView = Fingerprint(definingClass = "Lcom/dcinside/app/settings/K1;", name = "onViewCreated",
+            parameters = listOf("Landroid/view/View;", "Landroid/os/Bundle;"), returnType = "V").method
+        val settingsSuper = settingsView.implementation!!.instructions.indexOfFirst { instruction ->
+            val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            instruction.opcode == Opcode.INVOKE_SUPER && ref?.name == "onViewCreated"
+        }
+        check(settingsSuper >= 0) { "Settings screen lifecycle changed" }
+        settingsView.addInstructions(settingsSuper + 1,
+            "invoke-static {p1}, Llocal/privacy/MorpheSettingsActivity;->bindSettingsShortcut(Landroid/view/View;)V")
         val crashSwitch = appCreate.implementation!!.instructions.indexOfFirst {
             (it as? ReferenceInstruction)?.reference.let { ref ->
                 (ref as? MethodReference)?.let { m ->
@@ -320,21 +336,19 @@ val dcInsidePersonalPatch = bytecodePatch(
             invoke-static {p1}, Llocal/privacy/RemoteConfigFallback;->successOrActivated(Z)Z
             move-result p1
         """.trimIndent())
-        if (reduceRefresh.value == true) {
-            Fingerprint(definingClass = CONFIG, name = "b", parameters = listOf("LW3/o;"), returnType = "V")
-                .method.addInstructions(0, "invoke-static {}, Llocal/privacy/RemoteConfigRefreshGate;->markAttempt()V")
-            val homeStop = Fingerprint(definingClass = "Lcom/dcinside/app/main/E1;", name = "onStop", returnType = "V").method
-            val superStop = homeStop.implementation!!.instructions.indexOfFirst { it.opcode == Opcode.INVOKE_SUPER }
-            check(superStop >= 0) { "Home lifecycle changed" }
-            homeStop.addInstructionsWithLabels(superStop + 1, """
-                invoke-static {}, Llocal/privacy/RemoteConfigRefreshGate;->shouldRefreshOnHomeStop()Z
-                move-result v0
-                if-nez v0, :continue_refresh
-                return-void
-                :continue_refresh
-                nop
-            """.trimIndent())
-        }
+        Fingerprint(definingClass = CONFIG, name = "b", parameters = listOf("LW3/o;"), returnType = "V")
+            .method.addInstructions(0, "invoke-static {}, Llocal/privacy/RemoteConfigRefreshGate;->markAttempt()V")
+        val homeStop = Fingerprint(definingClass = "Lcom/dcinside/app/main/E1;", name = "onStop", returnType = "V").method
+        val superStop = homeStop.implementation!!.instructions.indexOfFirst { it.opcode == Opcode.INVOKE_SUPER }
+        check(superStop >= 0) { "Home lifecycle changed" }
+        homeStop.addInstructionsWithLabels(superStop + 1, """
+            invoke-static {}, Llocal/privacy/RemoteConfigRefreshGate;->shouldRefreshOnHomeStop()Z
+            move-result v0
+            if-nez v0, :continue_refresh
+            return-void
+            :continue_refresh
+            nop
+        """.trimIndent())
         Fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "p", returnType = "V")
             .method.addInstructions(0, "return-void")
     }

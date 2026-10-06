@@ -7,6 +7,6 @@ public final class PageIndicator {
     private PageIndicator() { }
 
     public static void hide(View view, int originalVisibility) {
-        view.setVisibility(View.GONE);
+        view.setVisibility(SettingsState.get("hide_page_indicator") ? View.GONE : originalVisibility);
     }
 }

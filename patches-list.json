@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "patches": [
     {
       "name": "DC Inside personal clean-up",
@@ -36,22 +36,12 @@
           ]
         }
       ],
-      "options": [
-        {
-          "key": "reduceConfigRefresh",
-          "title": "Reduce redundant remote configuration refreshes",
-          "description": "May delay server setting changes; opt in only after checking your use case.",
-          "required": false,
-          "type": "kotlin.Boolean",
-          "default": false,
-          "values": null
-        }
-      ]
+      "options": []
     },
     {
-      "name": "Hide home screen sections",
-      "description": "Choose which home sections to hide when patching the APK (5.3.6).",
-      "default": false,
+      "name": "글 목록 페이지 표시 설정",
+      "description": "앱의 Morphe 설정에서 글 목록과 검색 결과의 Page N 표시를 숨길 수 있습니다.",
+      "default": true,
       "category": null,
       "dependencies": [
         "BytecodePatch"
@@ -82,67 +72,48 @@
           ]
         }
       ],
-      "options": [
-        {
-          "key": "hideHomeSearch",
-          "title": "Hide search/menu",
-          "description": null,
-          "required": false,
-          "type": "kotlin.Boolean",
-          "default": false,
-          "values": null
-        },
-        {
-          "key": "hideHomeRecent",
-          "title": "Hide recent galleries",
-          "description": null,
-          "required": false,
-          "type": "kotlin.Boolean",
-          "default": false,
-          "values": null
-        },
-        {
-          "key": "hideHomeRecommendedGalleries",
-          "title": "Hide recommended galleries",
-          "description": null,
-          "required": false,
-          "type": "kotlin.Boolean",
-          "default": false,
-          "values": null
-        },
-        {
-          "key": "hideHomeRanking",
-          "title": "Hide gallery ranking",
-          "description": null,
-          "required": false,
-          "type": "kotlin.Boolean",
-          "default": false,
-          "values": null
-        },
-        {
-          "key": "hideHomeLiveBest",
-          "title": "Hide live best",
-          "description": null,
-          "required": false,
-          "type": "kotlin.Boolean",
-          "default": false,
-          "values": null
-        },
-        {
-          "key": "hideHomeRecommendedPosts",
-          "title": "Hide recommended posts",
-          "description": null,
-          "required": false,
-          "type": "kotlin.Boolean",
-          "default": false,
-          "values": null
-        }
-      ]
+      "options": []
     },
     {
-      "name": "Hide post list page indicators",
-      "description": "Hide Page N labels between post-list pages and in search results (5.3.6).",
-      "default": false,
+      "name": "앱 안에서 홈 화면 설정",
+      "description": "앱의 Morphe 설정에서 홈 화면 영역을 각각 숨길 수 있습니다.",
+      "default": true,
+      "category": null,
+      "dependencies": [
+        "BytecodePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "com.dcinside.app.android",
+          "name": "DC Inside",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#495C9E",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "5.3.6",
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": null,
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "작성자 아이디·IP 정보",
+      "description": "앱의 Morphe 설정에서 계정 아이디와 제공된 전체 IP의 통신사·지역 추정을 표시합니다.",
+      "default": true,
       "category": null,
       "dependencies": [
         "BytecodePatch"
