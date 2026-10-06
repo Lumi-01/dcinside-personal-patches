@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "patches": [
     {
       "name": "DC Inside personal clean-up",
@@ -9,6 +9,143 @@
       "category": null,
       "dependencies": [
         "ResourcePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "com.dcinside.app.android",
+          "name": "DC Inside",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#495C9E",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "5.3.6",
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": null,
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "reduceConfigRefresh",
+          "title": "Reduce redundant remote configuration refreshes",
+          "description": "May delay server setting changes; opt in only after checking your use case.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        }
+      ]
+    },
+    {
+      "name": "Hide home screen sections",
+      "description": "Choose which home sections to hide when patching the APK (5.3.6).",
+      "default": false,
+      "category": null,
+      "dependencies": [
+        "BytecodePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "com.dcinside.app.android",
+          "name": "DC Inside",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#495C9E",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "5.3.6",
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": null,
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "hideHomeSearch",
+          "title": "Hide search/menu",
+          "description": null,
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "hideHomeRecent",
+          "title": "Hide recent galleries",
+          "description": null,
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "hideHomeRecommendedGalleries",
+          "title": "Hide recommended galleries",
+          "description": null,
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "hideHomeRanking",
+          "title": "Hide gallery ranking",
+          "description": null,
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "hideHomeLiveBest",
+          "title": "Hide live best",
+          "description": null,
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "hideHomeRecommendedPosts",
+          "title": "Hide recommended posts",
+          "description": null,
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        }
+      ]
+    },
+    {
+      "name": "Hide post list page indicators",
+      "description": "Hide Page N labels between post-list pages and in search results (5.3.6).",
+      "default": false,
+      "category": null,
+      "dependencies": [
+        "BytecodePatch"
       ],
       "compatiblePackages": [
         {

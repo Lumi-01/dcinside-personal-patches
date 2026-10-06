@@ -14,14 +14,12 @@ import java.net.URLClassLoader
 import java.util.jar.Manifest
 
 fun main() {
-    val patchFiles = setOf(
-        File("build/libs/").listFiles { file ->
-            val fileName = file.name
-            !fileName.contains("javadoc") &&
-                    !fileName.contains("sources") &&
-                    fileName.endsWith(".mpp")
-        }!!.first()
-    )
+    val version = File("../gradle.properties").readLines()
+        .first { it.trimStart().startsWith("version =") }
+        .substringAfter('=').trim()
+    val bundle = File("build/libs/patches-$version.mpp")
+    check(bundle.isFile) { "Patch bundle for version $version is missing" }
+    val patchFiles = setOf(bundle)
     val loadedPatches = loadPatchesFromJar(patchFiles)
     val patchClassLoader = URLClassLoader(patchFiles.map { it.toURI().toURL() }.toTypedArray())
     val manifest = patchClassLoader.getResources("META-INF/MANIFEST.MF")

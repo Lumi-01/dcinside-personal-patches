@@ -13,6 +13,9 @@
 ## Patch layout
 
 - `patches/src/main/kotlin/dev/lumi/dcinside/DcInsidePatch.kt`: package/version compatibility, binary and XML edits, method fingerprints and bytecode edits.
+- `patches/src/main/kotlin/dev/lumi/dcinside/DisplayOptionsPatch.kt`: optional home-section and page-indicator changes. Each hard-coded item type and method must be rechecked for a new app version.
+- `extensions/extension/src/main/java/local/privacy/HomeFilter.java`: filters home adapter items only for the Morphe choices enabled at patch time; on a changed item class it leaves the item visible.
+- `extensions/extension/src/main/java/local/privacy/PageIndicator.java`: hides the verified page separator views.
 - `extensions/extension/src/main/java/local/privacy/SignerCompat.java`: runtime certificate lookup and narrowly scoped compatibility.
 - `extensions/extension/src/main/java/local/privacy/MessageDigest.java`: JNI-facing digest delegate.
 - `patches/build/libs/*.mpp`: generated bundle, never handwritten.
@@ -21,9 +24,11 @@ The official app, its decompiled original, account data, and signing keys belong
 
 ## Feature-parity status
 
-The manually rebuilt version also includes additional native and UI adjustments, Firebase analytics flags, remote-config fallback, and throttled redundant config refresh. This Morphe bundle must be independently verified for feature parity; do not assume that its current patch set implements every private-build change. Preserve login and content APIs when extending it.
+The manually rebuilt version includes additional native and UI adjustments. This Morphe bundle now includes the Firebase analytics flags, remote-config fallback, and an optional redundant-refresh limiter, but must be independently verified for feature parity. The limiter defaults to off because suppressing refresh can defer changed server settings. Preserve login and content APIs when extending it.
 
-The 1.0.0 bundle passed a Morphe Desktop patch run on the 5.3.6 original APK and static DEX/signature checks. Runtime regression testing remains pending because the available emulator failed to boot. Keep 5.3.6 experimental until startup, login, content loading and post/comment actions are checked on a device.
+The 1.0.1 bundle was applied to the 5.3.6 original APK and installed on Android 11 and 15 emulators. Home and post body loaded on both; gallery list and comments loaded on Android 11, and the recent-gallery hide option removed that home section. An earlier build changed a boolean register used later by the app's Realm configuration and broke post opening; replacing the Crashlytics enable call with `nop` preserved the register and fixed the same post on both emulators. The login screen opened earlier; account authentication and post/comment submission were not performed with this bundle. Keep 5.3.6 experimental until those and real-device behavior are checked.
+
+The [Ample bundle](https://github.com/AmpleReVanced/revanced-patches) currently marks DC Inside 5.3.4 as its target. This repository ports only the ad-dimension idea, home-section choices, and page-label hiding after 5.3.6 verification. Its gallery watch, DCCon loading, memo, author identifier, and history-filter features need separate runtime and layout checks before adoption. Gallery watch can increase refresh activity and battery use, so do not enable it as a battery optimization.
 
 ## Release maintenance
 
