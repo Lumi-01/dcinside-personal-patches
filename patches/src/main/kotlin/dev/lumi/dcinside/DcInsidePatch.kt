@@ -120,6 +120,33 @@ private val nativeCertificatePatch = resourcePatch {
             }
             check(likesCount == 1 && adCount == 1) { "Read footer layout changed" }
         }
+        document("res/layout/view_read_header.xml").use { document ->
+            val views = document.getElementsByTagName("*")
+            val names = (0 until views.length).map { views.item(it) as Element }
+                .filter { it.getAttribute("android:id") == "@id/read_header_name" }
+            val hitCounts = (0 until views.length).map { views.item(it) as Element }
+                .filter { it.getAttribute("android:id") == "@id/read_header_hit_count" }
+            check(names.size == 1 && hitCounts.size == 1) { "Post header layout changed" }
+            val metadata = document.createElement("TextView")
+            mapOf(
+                "android:id" to "@+id/lumi_read_author_info",
+                "android:textAppearance" to "?textTypeSub",
+                "android:textColor" to "?colorPostExt",
+                "android:visibility" to "gone",
+                "android:layout_width" to "0.0dp",
+                "android:layout_height" to "wrap_content",
+                "android:layout_marginTop" to "2.0dp",
+                "android:layout_marginStart" to "10.0dp",
+                "android:layout_marginEnd" to "10.0dp",
+                "android:includeFontPadding" to "false",
+                "app:layout_constraintStart_toStartOf" to "parent",
+                "app:layout_constraintEnd_toEndOf" to "parent",
+                "app:layout_constraintTop_toBottomOf" to "@id/read_header_name",
+            ).forEach { (key, value) -> metadata.setAttribute(key, value) }
+            hitCounts.single().parentNode.insertBefore(metadata, hitCounts.single())
+            hitCounts.single().setAttribute("app:layout_constraintTop_toBottomOf", "@id/lumi_read_author_info")
+            hitCounts.single().setAttribute("app:layout_goneMarginTop", "0.0dp")
+        }
         document("res/layout/fragment_post_list.xml").use { document ->
             val views = document.getElementsByTagName("*")
             var adWrapCount = 0

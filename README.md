@@ -14,7 +14,7 @@ The baseline is Android app version **5.3.6** (`versionCode 100175`). The bundle
 - Retain the vendor's signer allowlist while adding the certificate Morphe actually uses to sign the locally patched APK. A narrowly scoped native digest delegate maps only that installed certificate's public fingerprint to the original public fingerprint. Other digests are delegated unchanged.
 - In-app **Morphe settings** entry at the top of the app's native settings screen. It has Korean explanations and switches for six home sections, `Page N` separators, author auto-image hiding, author IDs, IP estimates and repeated configuration refreshes. These controls default to off and can be changed without repatching.
 - The optional auto-image filter removes only the leading DC Inside image with the observed long hash alt marker and no upload file marker. It leaves unknown images in place; the marker is a heuristic and may change in future app versions.
-- Author IDs are shown only when supplied by the app. With the IP switch enabled, masked two-octet IPs are matched against all labels in AmpleReVanced's bundled community-maintained prefix memo table. These are **network-range estimates** and cannot identify a person, exact carrier or region. No IP lookup is sent to an external service.
+- Author IDs are shown only when supplied by the app. In the post header, enabled ID and masked IP details use a separate wrapping line so long IP labels remain readable. With the IP switch enabled, masked two-octet IPs are matched against all labels in AmpleReVanced's bundled community-maintained prefix memo table. These are **network-range estimates** and cannot identify a person, exact carrier or region. No IP lookup is sent to an external service.
 
 The [Ample DC Inside patch catalog](https://morphe-patches.software/?app=com.dcinside.app.android#apps) currently targets app 5.3.4. Memo presets, DCCon controls and gallery watch are **not** in this 5.3.6 bundle. Morphe Manager's backup/restore/reset screen is already part of Manager itself. See [ATTRIBUTION.md](ATTRIBUTION.md) for the related GPLv3 project.
 
@@ -28,7 +28,7 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md). The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.1.1) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md). The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.1.2) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 

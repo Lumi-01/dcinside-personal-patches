@@ -3,7 +3,6 @@ package local.privacy;
 import android.content.Context;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
-import android.widget.TextView;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Collections;
@@ -24,13 +23,11 @@ public final class IpInfo {
         return new SpannableStringBuilder(rendered).append(" · ").append(estimate).append('\u00a0');
     }
 
-    public static void showWhenAvailable(TextView label, String ip) {
-        if (!SettingsState.get("show_ip_info")) return;
-        String estimate = prefixEstimate(ip);
-        if (estimate != null && label.getText().toString().contains("(" + ip + ")")
-                && !label.getText().toString().contains(" · " + estimate)) {
-            label.setText(new SpannableStringBuilder(label.getText()).append(" · ").append(estimate).append('\u00a0'));
-        }
+    public static String postMetadata(String ip) {
+        if (!SettingsState.get("show_ip_info") || ip == null || ip.trim().isEmpty()) return null;
+        String visible = ip.trim();
+        String estimate = prefixEstimate(visible);
+        return "IP: " + visible + (estimate == null ? "" : " · " + estimate);
     }
 
     private static String prefixEstimate(String ip) {

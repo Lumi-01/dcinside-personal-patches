@@ -23,15 +23,14 @@ val authorInfoPatch = bytecodePatch(
     execute {
         val header = Fingerprint(
             definingClass = "Lcom/dcinside/app/view/PostReadHeaderView;",
-            name = "e0",
-            parameters = listOf("Landroid/content/Context;", "Lcom/dcinside/app/model/PostInfo;", "Z", "Z"),
-            returnType = "Lcom/dcinside/app/view/PostReadHeaderView;",
+            name = "Y",
+            parameters = listOf("Lcom/dcinside/app/model/PostInfo;", "Z", "Ljava/lang/String;"),
+            returnType = "V",
         ).method
-        // e0 invokes the final name renderer after Y, so decorate its return instead.
-        val end = header.implementation!!.instructions.indexOfLast { it.opcode == Opcode.RETURN_OBJECT }
-        check(end >= 0) { "Post header return changed" }
-        header.addInstructions(end,
-            "invoke-static {p0, p2}, Llocal/privacy/AuthorInfo;->applyPostHeader(Landroid/view/View;Ljava/lang/Object;)V")
+        // Both factory-created and reused headers pass through Y with their post data.
+        // Insert at entry: a branch targets the final return and can skip code placed there.
+        header.addInstructions(0,
+            "invoke-static/range {p0 .. p1}, Llocal/privacy/AuthorInfo;->applyPostHeader(Landroid/view/View;Ljava/lang/Object;)V")
 
         // The app's shared author renderer appends the visible IP in parentheses.
         // Decorate its completed text so the hint follows the IP, not the nickname.

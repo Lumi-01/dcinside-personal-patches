@@ -3,6 +3,7 @@ package local.privacy;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Build;
 import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
@@ -14,6 +15,8 @@ import android.widget.TextView;
 
 /** In-app settings; no dependency on the vendor's internal setting classes. */
 public final class MorpheSettingsActivity extends Activity {
+    private ScrollView settingsScroll;
+    private boolean initialScrollPending = true;
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
@@ -22,6 +25,10 @@ public final class MorpheSettingsActivity extends Activity {
         super.onCreate(state);
         SettingsState.init(this);
         ScrollView scroll = new ScrollView(this);
+        settingsScroll = scroll;
+        // Android 15 lays this platform-themed activity edge-to-edge underneath
+        // its status/action bars. Reserve their height inside the scroll content.
+        if (Build.VERSION.SDK_INT >= 35) scroll.setPadding(0, dp(80), 0, 0);
         scroll.setSaveEnabled(false);
         scroll.setFocusableInTouchMode(true);
         scroll.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
@@ -60,6 +67,15 @@ public final class MorpheSettingsActivity extends Activity {
         body.addView(note);
         scroll.requestFocus();
         scroll.post(() -> scroll.scrollTo(0, 0));
+    }
+
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && initialScrollPending && settingsScroll != null) {
+            initialScrollPending = false;
+            settingsScroll.post(() -> settingsScroll.scrollTo(0, 0));
+            settingsScroll.postDelayed(() -> settingsScroll.scrollTo(0, 0), 250);
+        }
     }
 
     @Override public boolean onNavigateUp() {
