@@ -14,7 +14,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 @Suppress("unused")
 val authorInfoPatch = bytecodePatch(
     name = "작성자 아이디·IP 정보",
-    description = "앱의 Morphe 설정에서 계정 아이디와 제공된 전체 IP의 통신사·지역 추정을 표시합니다.",
+    description = "앱의 Morphe 설정에서 계정 아이디와 내장 IP 대역표의 추정 정보를 표시합니다.",
     default = true,
 ) {
     compatibleWith(compatibility)
@@ -23,14 +23,29 @@ val authorInfoPatch = bytecodePatch(
     execute {
         val header = Fingerprint(
             definingClass = "Lcom/dcinside/app/view/PostReadHeaderView;",
-            name = "Y",
-            parameters = listOf("Lcom/dcinside/app/model/PostInfo;", "Z", "Ljava/lang/String;"),
-            returnType = "V",
+            name = "e0",
+            parameters = listOf("Landroid/content/Context;", "Lcom/dcinside/app/model/PostInfo;", "Z", "Z"),
+            returnType = "Lcom/dcinside/app/view/PostReadHeaderView;",
         ).method
-        val end = header.implementation!!.instructions.indexOfLast { it.opcode == Opcode.RETURN_VOID }
+        // e0 invokes the final name renderer after Y, so decorate its return instead.
+        val end = header.implementation!!.instructions.indexOfLast { it.opcode == Opcode.RETURN_OBJECT }
         check(end >= 0) { "Post header return changed" }
         header.addInstructions(end,
-            "invoke-static/range {p0 .. p1}, Llocal/privacy/AuthorInfo;->applyPostHeader(Landroid/view/View;Ljava/lang/Object;)V")
+            "invoke-static {p0, p2}, Llocal/privacy/AuthorInfo;->applyPostHeader(Landroid/view/View;Ljava/lang/Object;)V")
+
+        // The app's shared author renderer appends the visible IP in parentheses.
+        // Decorate its completed text so the hint follows the IP, not the nickname.
+        val authorSpan = Fingerprint(
+            definingClass = "Lcom/dcinside/app/span/g;",
+            name = "t",
+            returnType = "Landroid/text/Spannable;",
+        ).method
+        val authorSpanEnd = authorSpan.implementation!!.instructions.indexOfLast { it.opcode == Opcode.RETURN_OBJECT }
+        check(authorSpanEnd >= 0) { "Author span return changed" }
+        authorSpan.addInstructions(authorSpanEnd, """
+            invoke-static {p0, p4}, Llocal/privacy/IpInfo;->decorateRendered(Landroid/text/Spannable;Ljava/lang/String;)Landroid/text/Spannable;
+            move-result-object p0
+        """.trimIndent())
 
         listOf(
             "Lcom/dcinside/app/post/X2;" to "s0",

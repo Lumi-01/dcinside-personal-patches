@@ -1,15 +1,15 @@
 package local.privacy;
 
 import android.content.Context;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.widget.TextView;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 /** Offline two-octet range hints copied from a community memo preset. */
 public final class IpInfo {
@@ -17,17 +17,20 @@ public final class IpInfo {
 
     private IpInfo() { }
 
-    public static String decorateName(String name, String ip) {
-        if (!SettingsState.get("show_ip_info")) return name;
+    public static Spannable decorateRendered(Spannable rendered, String ip) {
+        if (!SettingsState.get("show_ip_info") || rendered == null) return rendered;
         String estimate = prefixEstimate(ip);
-        return estimate == null ? name : name + " [대역: " + estimate + "]";
+        if (estimate == null || !rendered.toString().contains("(" + ip + ")")) return rendered;
+        return new SpannableStringBuilder(rendered).append(" · ").append(estimate).append('\u00a0');
     }
 
     public static void showWhenAvailable(TextView label, String ip) {
         if (!SettingsState.get("show_ip_info")) return;
         String estimate = prefixEstimate(ip);
-        if (estimate != null) label.setText(new SpannableStringBuilder(label.getText())
-                .append(" · 대역: ").append(estimate));
+        if (estimate != null && label.getText().toString().contains("(" + ip + ")")
+                && !label.getText().toString().contains(" · " + estimate)) {
+            label.setText(new SpannableStringBuilder(label.getText()).append(" · ").append(estimate).append('\u00a0'));
+        }
     }
 
     private static String prefixEstimate(String ip) {
@@ -49,8 +52,7 @@ public final class IpInfo {
         if (found != null) return found;
         synchronized (IpInfo.class) {
             if (prefixLabels != null) return prefixLabels;
-            HashMap<String, String> result = new HashMap<>();
-            Set<String> ambiguous = new HashSet<>();
+            HashMap<String, LinkedHashSet<String>> entries = new HashMap<>();
             Context context = SettingsState.context();
             if (context != null) {
                 int id = context.getResources().getIdentifier("lumi_ip_prefixes", "raw", context.getPackageName());
@@ -64,18 +66,19 @@ public final class IpInfo {
                             String key = line.substring(0, dash).trim();
                             String value = line.substring(dash + 1).trim();
                             if (!key.matches("[0-9]{1,3}\\.[0-9]{1,3}") || value.isEmpty()) continue;
-                            if (value.length() > 15) value = value.substring(0, 15);
-                            if (ambiguous.contains(key)) continue;
-                            String existing = result.get(key);
-                            if (existing != null && !existing.equals(value)) {
-                                result.remove(key);
-                                ambiguous.add(key);
-                            } else {
-                                result.put(key, value);
-                            }
+                            entries.computeIfAbsent(key, unused -> new LinkedHashSet<>()).add(value);
                         }
                     } catch (Exception ignored) { }
                 }
+            }
+            HashMap<String, String> result = new HashMap<>();
+            for (Map.Entry<String, LinkedHashSet<String>> entry : entries.entrySet()) {
+                StringBuilder joined = new StringBuilder();
+                for (String value : entry.getValue()) {
+                    if (joined.length() > 0) joined.append(" / ");
+                    joined.append(value);
+                }
+                result.put(entry.getKey(), joined.toString());
             }
             prefixLabels = Collections.unmodifiableMap(result);
             return prefixLabels;

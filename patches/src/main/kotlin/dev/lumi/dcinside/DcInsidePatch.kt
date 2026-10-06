@@ -178,6 +178,15 @@ val dcInsidePersonalPatch = bytecodePatch(
         check(settingsSuper >= 0) { "Settings screen lifecycle changed" }
         settingsView.addInstructions(settingsSuper + 1,
             "invoke-static {p1}, Llocal/privacy/MorpheSettingsActivity;->bindSettingsShortcut(Landroid/view/View;)V")
+        val postHtml = Fingerprint(definingClass = "Lcom/dcinside/app/read/V;", name = "b",
+            parameters = emptyList(), returnType = "Ljava/lang/String;").method
+        val htmlReturn = postHtml.implementation!!.instructions.indexOfLast { it.opcode == Opcode.RETURN_OBJECT }
+        check(htmlReturn >= 0) { "Post HTML getter changed" }
+        val htmlRegister = (postHtml.implementation!!.instructions[htmlReturn] as OneRegisterInstruction).registerA
+        postHtml.addInstructions(htmlReturn, """
+            invoke-static {v$htmlRegister}, Llocal/privacy/AutoImageFilter;->filter(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object v$htmlRegister
+        """.trimIndent())
         val crashSwitch = appCreate.implementation!!.instructions.indexOfFirst {
             (it as? ReferenceInstruction)?.reference.let { ref ->
                 (ref as? MethodReference)?.let { m ->

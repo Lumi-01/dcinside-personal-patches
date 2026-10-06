@@ -4,15 +4,26 @@ import android.text.SpannableStringBuilder;
 import android.view.View;
 import android.widget.TextView;
 import java.lang.reflect.Method;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Displays only author identifiers already supplied by the app's post data. */
 public final class AuthorInfo {
+    private static final ConcurrentHashMap<Class<?>, ConcurrentHashMap<String, Method>> GETTERS =
+            new ConcurrentHashMap<>();
     private AuthorInfo() { }
 
     private static String value(Object item, String getter) {
         if (item == null) return null;
         try {
-            Method method = item.getClass().getDeclaredMethod(getter);
+            Class<?> type = item.getClass();
+            ConcurrentHashMap<String, Method> methods = GETTERS.computeIfAbsent(type,
+                    unused -> new ConcurrentHashMap<>());
+            Method method = methods.get(getter);
+            if (method == null) {
+                Method resolved = type.getDeclaredMethod(getter);
+                Method existing = methods.putIfAbsent(getter, resolved);
+                method = existing == null ? resolved : existing;
+            }
             Object result = method.invoke(item);
             return result instanceof String ? (String) result : null;
         } catch (ReflectiveOperationException | RuntimeException ignored) {
@@ -28,11 +39,11 @@ public final class AuthorInfo {
     }
 
     public static String listName(Object post) {
-        return IpInfo.decorateName(withId(value(post, "z"), value(post, "S")), value(post, "t"));
+        return withId(value(post, "z"), value(post, "S"));
     }
 
     public static String commentName(Object comment) {
-        return IpInfo.decorateName(withId(value(comment, "Y"), value(comment, "h0")), value(comment, "S"));
+        return withId(value(comment, "Y"), value(comment, "h0"));
     }
 
     public static void applyPostHeader(View header, Object post) {
@@ -42,7 +53,8 @@ public final class AuthorInfo {
         if (!(child instanceof TextView)) return;
         TextView nameView = (TextView) child;
         String userId = value(post, "W1");
-        if (SettingsState.get("show_author_id") && userId != null && !userId.trim().isEmpty()) {
+        if (SettingsState.get("show_author_id") && userId != null && !userId.trim().isEmpty()
+                && !nameView.getText().toString().contains("(" + userId.trim() + ")")) {
             CharSequence original = nameView.getText();
             SpannableStringBuilder text = new SpannableStringBuilder(original == null ? "" : original);
             text.append(" (").append(userId.trim()).append(")");

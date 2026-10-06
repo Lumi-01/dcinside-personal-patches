@@ -12,8 +12,9 @@ The baseline is Android app version **5.3.6** (`versionCode 100175`). The bundle
 - Keep repeated remote-configuration refresh suppression optional and off by default in the in-app Morphe settings. Enabling it can delay a server setting change until the next allowed refresh; startup and explicitly required refresh paths remain available.
 - Reuse previously activated remote-configuration values when a transient fetch fails.
 - Retain the vendor's signer allowlist while adding the certificate Morphe actually uses to sign the locally patched APK. A narrowly scoped native digest delegate maps only that installed certificate's public fingerprint to the original public fingerprint. Other digests are delegated unchanged.
-- In-app **Morphe settings** entry at the top of the app's native settings screen. It has Korean explanations and switches for six home sections, `Page N` separators, author IDs, IP estimates and repeated configuration refreshes. These controls default to off and can be changed without repatching.
-- Author IDs are shown only when supplied by the app. With the IP switch enabled, masked two-octet IPs are matched against AmpleReVanced's bundled community-maintained prefix memo table and labeled **network-range estimates**. They cannot identify a person, exact carrier or region. No IP lookup is sent to an external service.
+- In-app **Morphe settings** entry at the top of the app's native settings screen. It has Korean explanations and switches for six home sections, `Page N` separators, author auto-image hiding, author IDs, IP estimates and repeated configuration refreshes. These controls default to off and can be changed without repatching.
+- The optional auto-image filter removes only the leading DC Inside image with the observed long hash alt marker and no upload file marker. It leaves unknown images in place; the marker is a heuristic and may change in future app versions.
+- Author IDs are shown only when supplied by the app. With the IP switch enabled, masked two-octet IPs are matched against all labels in AmpleReVanced's bundled community-maintained prefix memo table. These are **network-range estimates** and cannot identify a person, exact carrier or region. No IP lookup is sent to an external service.
 
 The [Ample DC Inside patch catalog](https://morphe-patches.software/?app=com.dcinside.app.android#apps) currently targets app 5.3.4. Memo presets, DCCon controls and gallery watch are **not** in this 5.3.6 bundle. Morphe Manager's backup/restore/reset screen is already part of Manager itself. See [ATTRIBUTION.md](ATTRIBUTION.md) for the related GPLv3 project.
 
@@ -24,10 +25,10 @@ This bundle is separate from the manually rebuilt personal APK. See [MAINTAINING
 Morphe's official Gradle template requires GitHub Packages authentication with `read:packages`. Set `gpr.user` and `gpr.key` in your **user-level** Gradle properties, as described in the [Morphe setup guide](https://github.com/MorpheApp/morphe-patcher/blob/main/docs/2_1_setup.md), then run:
 
 ```sh
-./gradlew buildAndroid
+./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md). The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.1.0) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md). The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.1.1) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 

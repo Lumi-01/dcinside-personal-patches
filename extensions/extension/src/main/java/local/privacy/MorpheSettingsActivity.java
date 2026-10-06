@@ -22,6 +22,9 @@ public final class MorpheSettingsActivity extends Activity {
         super.onCreate(state);
         SettingsState.init(this);
         ScrollView scroll = new ScrollView(this);
+        scroll.setSaveEnabled(false);
+        scroll.setFocusableInTouchMode(true);
+        scroll.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         body.setPadding(dp(16), dp(12), dp(16), dp(24));
@@ -41,17 +44,22 @@ public final class MorpheSettingsActivity extends Activity {
         section(body, "글 목록");
         choice(body, "hide_page_indicator", "페이지 구분 표시 숨기기", "글 목록과 검색 결과에 나타나는 ‘Page N’ 표시를 감춥니다.");
 
+        section(body, "게시글 본문");
+        choice(body, "hide_author_auto_image", "작성자 자동 짤방 숨기기", "글 맨 앞에 자동 삽입된 것으로 보이는 이미지만 숨깁니다. 일반 첨부 이미지는 유지하도록 제한하며, 판별할 수 없는 이미지는 그대로 둡니다.");
+
         section(body, "작성자 정보");
         choice(body, "show_author_id", "닉네임 옆에 계정 아이디 표시", "앱이 제공하는 계정 아이디가 있을 때 닉네임 옆에 표시합니다. 비회원에게는 표시되지 않습니다.");
-        choice(body, "show_ip_info", "IP 대역 정보 표시", "앱에 동봉된 대역표로 IP 앞 두 구간의 운영망을 추정합니다. 외부 조회는 하지 않으며 정확한 통신사·지역은 알 수 없습니다.");
+        choice(body, "show_ip_info", "IP 옆에 대역 정보 표시", "표시된 IP 뒤에 내장 대역표의 모든 통신사·지역 표기를 보여줍니다. 외부 조회는 하지 않으며 추정 정보이므로 정확하지 않을 수 있습니다.");
 
         section(body, "동작 및 배터리");
         choice(body, "reduce_config_refresh", "중복 새로고침 제한", "홈 화면을 떠날 때 서버 설정을 반복 확인하는 횟수를 줄입니다. 서버의 새 설정 반영이 늦어질 수 있습니다.");
 
         TextView note = new TextView(this);
-        note.setText("홈 화면 항목은 홈으로 돌아가 새로고침하면 반영됩니다. IP 대역표는 오래되거나 여러 사업자가 섞인 대역에서 틀릴 수 있습니다.");
+        note.setText("홈 화면 항목은 홈으로 돌아가 새로고침하면 반영됩니다. 자짤 숨김은 글을 다시 열면 적용됩니다. IP 대역표는 오래되거나 여러 사업자가 섞인 대역에서 틀릴 수 있습니다.");
         note.setPadding(0, dp(24), 0, 0);
         body.addView(note);
+        scroll.requestFocus();
+        scroll.post(() -> scroll.scrollTo(0, 0));
     }
 
     @Override public boolean onNavigateUp() {
@@ -113,7 +121,7 @@ public final class MorpheSettingsActivity extends Activity {
         title.setTypeface(null, Typeface.BOLD);
         shortcut.addView(title);
         TextView summary = new TextView(root.getContext());
-        summary.setText("홈 화면 · 글 목록 · 작성자 정보");
+        summary.setText("홈 화면 · 게시글 · 작성자 정보 · 동작");
         summary.setTextSize(13);
         summary.setPadding(0, d / 3, 0, 0);
         shortcut.addView(summary);

@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "patches": [
     {
       "name": "DC Inside personal clean-up",
@@ -112,7 +112,7 @@
     },
     {
       "name": "작성자 아이디·IP 정보",
-      "description": "앱의 Morphe 설정에서 계정 아이디와 제공된 전체 IP의 통신사·지역 추정을 표시합니다.",
+      "description": "앱의 Morphe 설정에서 계정 아이디와 내장 IP 대역표의 추정 정보를 표시합니다.",
       "default": true,
       "category": null,
       "dependencies": [
