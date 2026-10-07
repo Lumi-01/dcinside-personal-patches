@@ -1,5 +1,7 @@
 package local.privacy;
 
+import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.TextView;
 import java.lang.reflect.Method;
@@ -47,18 +49,68 @@ public final class AuthorInfo {
 
     public static void applyPostHeader(View header, Object post) {
         if (header == null || post == null) return;
-        int id = header.getResources().getIdentifier("lumi_read_author_info", "id",
+        int buttonId = header.getResources().getIdentifier("lumi_read_ip_expand", "id",
                 header.getContext().getPackageName());
-        if (id == 0) return;
-        View child = header.findViewById(id);
-        if (!(child instanceof TextView)) return;
-        TextView metadata = (TextView) child;
+        int nameId = header.getResources().getIdentifier("read_header_name", "id",
+                header.getContext().getPackageName());
+        if (buttonId == 0 || nameId == 0) return;
+        View buttonView = header.findViewById(buttonId);
+        View nameView = header.findViewById(nameId);
+        if (!(buttonView instanceof TextView) || !(nameView instanceof TextView)) return;
+        TextView button = (TextView) buttonView;
+        TextView name = (TextView) nameView;
         String userId = value(post, "W1");
-        String ip = IpInfo.postMetadata(value(post, "b"));
-        String shownId = SettingsState.get("show_author_id") && userId != null
-                && !userId.trim().isEmpty() ? "아이디: " + userId.trim() : null;
-        String display = shownId == null ? ip : ip == null ? shownId : shownId + "  ·  " + ip;
-        metadata.setText(display == null ? "" : display);
-        metadata.setVisibility(display == null ? View.GONE : View.VISIBLE);
+        String rawIp = value(post, "b");
+        name.setTag(nameId, post);
+        name.post(() -> {
+            if (name.getTag(nameId) != post) return;
+            decoratePostName(name, userId, rawIp);
+            boolean hasIp = SettingsState.get("show_ip_info")
+                    && rawIp != null && !rawIp.trim().isEmpty();
+            if (!hasIp) {
+                button.setVisibility(View.GONE);
+                button.setOnClickListener(null);
+                return;
+            }
+            boolean open = !SettingsState.get("collapse_long_ip_info");
+            setExpanded(name, button, open);
+            button.setVisibility(View.VISIBLE);
+            button.setOnClickListener(view -> setExpanded(name, button,
+                    name.getMaxLines() == 1));
+            if (!open) name.post(() -> {
+                if (name.getTag(nameId) != post || name.getLayout() == null) return;
+                // A short name and range need no expand control.
+                if (name.getLayout().getEllipsisCount(0) == 0) button.setVisibility(View.GONE);
+            });
+        });
+    }
+
+    private static void setExpanded(TextView name, TextView button, boolean expanded) {
+        name.setSingleLine(!expanded);
+        if (expanded) {
+            name.setMaxLines(Integer.MAX_VALUE);
+            name.setEllipsize(null);
+        } else {
+            name.setEllipsize(TextUtils.TruncateAt.END);
+        }
+        button.setText(expanded ? "접기" : "펼치기");
+        button.setContentDescription(expanded ? "IP 정보 접기" : "IP 정보 펼치기");
+    }
+
+    private static void decoratePostName(TextView name, String userId, String rawIp) {
+        CharSequence current = name.getText();
+        if (current == null || current.length() == 0) return;
+        SpannableStringBuilder updated = new SpannableStringBuilder(current);
+        if (SettingsState.get("show_author_id") && userId != null && !userId.trim().isEmpty()) {
+            String id = userId.trim();
+            if (!updated.toString().contains("(" + id + ")")) {
+                String label = " (" + id + ")";
+                String ip = rawIp == null ? "" : rawIp.trim();
+                int ipStart = ip.isEmpty() ? -1 : updated.toString().indexOf("(" + ip + ")");
+                if (ipStart >= 0) updated.insert(ipStart, label + " ");
+                else updated.append(label);
+            }
+        }
+        if (!updated.toString().contentEquals(current)) name.setText(updated);
     }
 }

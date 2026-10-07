@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 /** Conservatively removes one identifiable auto-inserted image from post HTML. */
 public final class AutoImageFilter {
+    private static final Pattern BODY = Pattern.compile("<body\\b[^>]*>", Pattern.CASE_INSENSITIVE);
     private static final Pattern IMAGE = Pattern.compile("<img\\b[^>]{0,4096}>", Pattern.CASE_INSENSITIVE);
     private static final Pattern HASH_ALT = Pattern.compile("\\balt\\s*=\\s*['\"][0-9a-f]{32,}['\"]", Pattern.CASE_INSENSITIVE);
 
@@ -12,9 +13,8 @@ public final class AutoImageFilter {
 
     public static String filter(String html) {
         if (!SettingsState.get("hide_author_auto_image") || html == null || html.isEmpty()) return html;
-        int body = html.toLowerCase(java.util.Locale.ROOT).indexOf("<body");
-        int start = body >= 0 ? html.indexOf('>', body) + 1 : 0;
-        if (start < 0) return html;
+        Matcher body = BODY.matcher(html);
+        int start = body.find() ? body.end() : 0;
         Matcher image = IMAGE.matcher(html);
         if (!image.find(start)) return html;
         String tag = image.group();

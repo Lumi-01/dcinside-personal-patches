@@ -26,7 +26,10 @@ public final class SettingsState {
 
     public static boolean get(String key) {
         SharedPreferences prefs = preferences;
-        return prefs != null && prefs.getBoolean(key, false);
+        boolean defaultOn = "collapse_long_ip_info".equals(key)
+                || "block_naver_web_tracking".equals(key)
+                || "block_web_ad_requests".equals(key);
+        return prefs != null && prefs.getBoolean(key, defaultOn);
     }
 
     public static void set(String key, boolean value) {

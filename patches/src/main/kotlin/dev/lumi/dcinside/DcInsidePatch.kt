@@ -124,28 +124,28 @@ private val nativeCertificatePatch = resourcePatch {
             val views = document.getElementsByTagName("*")
             val names = (0 until views.length).map { views.item(it) as Element }
                 .filter { it.getAttribute("android:id") == "@id/read_header_name" }
-            val hitCounts = (0 until views.length).map { views.item(it) as Element }
-                .filter { it.getAttribute("android:id") == "@id/read_header_hit_count" }
-            check(names.size == 1 && hitCounts.size == 1) { "Post header layout changed" }
-            val metadata = document.createElement("TextView")
+            val memos = (0 until views.length).map { views.item(it) as Element }
+                .filter { it.getAttribute("android:id") == "@id/read_header_user_memo" }
+            check(names.size == 1 && memos.size == 1) { "Post header layout changed" }
+            val expand = document.createElement("TextView")
             mapOf(
-                "android:id" to "@+id/lumi_read_author_info",
+                "android:id" to "@+id/lumi_read_ip_expand",
                 "android:textAppearance" to "?textTypeSub",
-                "android:textColor" to "?colorPostExt",
+                "android:textColor" to "?colorPrimary",
                 "android:visibility" to "gone",
-                "android:layout_width" to "0.0dp",
-                "android:layout_height" to "wrap_content",
-                "android:layout_marginTop" to "2.0dp",
-                "android:layout_marginStart" to "10.0dp",
+                "android:text" to "펼치기",
+                "android:gravity" to "center",
+                "android:layout_width" to "wrap_content",
+                "android:layout_height" to "40.0dp",
+                "android:minWidth" to "48.0dp",
+                "android:paddingStart" to "6.0dp",
                 "android:layout_marginEnd" to "10.0dp",
-                "android:includeFontPadding" to "false",
-                "app:layout_constraintStart_toStartOf" to "parent",
+                "app:layout_constraintTop_toTopOf" to "@id/read_header_name",
+                "app:layout_constraintBottom_toBottomOf" to "@id/read_header_name",
                 "app:layout_constraintEnd_toEndOf" to "parent",
-                "app:layout_constraintTop_toBottomOf" to "@id/read_header_name",
-            ).forEach { (key, value) -> metadata.setAttribute(key, value) }
-            hitCounts.single().parentNode.insertBefore(metadata, hitCounts.single())
-            hitCounts.single().setAttribute("app:layout_constraintTop_toBottomOf", "@id/lumi_read_author_info")
-            hitCounts.single().setAttribute("app:layout_goneMarginTop", "0.0dp")
+            ).forEach { (key, value) -> expand.setAttribute(key, value) }
+            names.single().parentNode.insertBefore(expand, memos.single().nextSibling)
+            memos.single().setAttribute("app:layout_constraintEnd_toStartOf", "@id/lumi_read_ip_expand")
         }
         document("res/layout/fragment_post_list.xml").use { document ->
             val views = document.getElementsByTagName("*")
@@ -213,6 +213,35 @@ val dcInsidePersonalPatch = bytecodePatch(
         postHtml.addInstructions(htmlReturn, """
             invoke-static {v$htmlRegister}, Llocal/privacy/AutoImageFilter;->filter(Ljava/lang/String;)Ljava/lang/String;
             move-result-object v$htmlRegister
+        """.trimIndent())
+        Fingerprint(definingClass = "Lcom/dcinside/app/wv/a;", name = "shouldInterceptRequest",
+            parameters = listOf("Landroid/webkit/WebView;", "Landroid/webkit/WebResourceRequest;"),
+            returnType = "Landroid/webkit/WebResourceResponse;").method.addInstructionsWithLabels(0, """
+                invoke-static {p2}, Llocal/privacy/WebResourceBlocker;->intercept(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
+                move-result-object v0
+                if-eqz v0, :continue_web_request
+                return-object v0
+                :continue_web_request
+                nop
+            """.trimIndent())
+        // The post WebView builder itself adds Naver analytics scripts. Suppress
+        // those script tags before the WebView can request either script or beacon.
+        val webBuilder = Fingerprint(definingClass = "Lcom/dcinside/app/wv/l;", name = "<init>",
+            parameters = listOf("Landroid/content/Context;", "Lorg/jsoup/nodes/f;", "Z", "Z", "Z", "I",
+                "Lcom/dcinside/app/wv/r;", "Z", "Ljava/lang/Float;", "Z", "Z", "Z"),
+            returnType = "V").method
+        val scriptAnchor = webBuilder.implementation!!.instructions.indexOfFirst { instruction ->
+            (instruction as? ReferenceInstruction)?.reference.toString()
+                .contains("https://wcs.naver.net/wcslog.js")
+        }
+        check(scriptAnchor >= 0) { "Naver analytics script anchor changed" }
+        val scriptGuard = (0 until scriptAnchor).lastOrNull { index ->
+            webBuilder.implementation!!.instructions[index].opcode == Opcode.IF_EQZ
+        }
+        check(scriptGuard != null && scriptAnchor - scriptGuard < 10) { "Naver analytics guard changed" }
+        webBuilder.addInstructions(scriptGuard, """
+            invoke-static/range {p10 .. p10}, Llocal/privacy/WebResourceBlocker;->allowNaverAnalytics(Z)Z
+            move-result p10
         """.trimIndent())
         val crashSwitch = appCreate.implementation!!.instructions.indexOfFirst {
             (it as? ReferenceInstruction)?.reference.let { ref ->

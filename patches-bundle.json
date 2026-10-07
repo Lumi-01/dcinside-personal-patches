@@ -1,8 +1,8 @@
 {
-  "created_at": "2026-10-06T18:56:42",
-  "description": "Experimental DC Inside 5.3.6 cleanup with in-app Morphe settings, post author metadata and optional auto-image hiding",
-  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.1.2/patches-1.1.2.mpp",
+  "created_at": "2026-10-07T02:00:49Z",
+  "description": "Experimental DC Inside 5.3.6 cleanup with in-app controls, inline expandable IP details, and source-level Naver analytics removal",
+  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.1.3/patches-1.1.3.mpp",
   "signature_download_url": "",
-  "version": "1.1.2"
+  "version": "1.1.3"
 }
 

@@ -55,8 +55,13 @@ public final class MorpheSettingsActivity extends Activity {
         choice(body, "hide_author_auto_image", "작성자 자동 짤방 숨기기", "글 맨 앞에 자동 삽입된 것으로 보이는 이미지만 숨깁니다. 일반 첨부 이미지는 유지하도록 제한하며, 판별할 수 없는 이미지는 그대로 둡니다.");
 
         section(body, "작성자 정보");
-        choice(body, "show_author_id", "닉네임 옆에 계정 아이디 표시", "앱이 제공하는 계정 아이디가 있을 때 닉네임 옆에 표시합니다. 비회원에게는 표시되지 않습니다.");
-        choice(body, "show_ip_info", "IP 옆에 대역 정보 표시", "표시된 IP 뒤에 내장 대역표의 모든 통신사·지역 표기를 보여줍니다. 외부 조회는 하지 않으며 추정 정보이므로 정확하지 않을 수 있습니다.");
+        choice(body, "show_author_id", "닉네임 옆에 계정 아이디 표시", "앱이 제공하는 계정 아이디를 별도 문구 없이 닉네임 바로 뒤에 표시합니다. 비회원에게는 표시되지 않습니다.");
+        choice(body, "show_ip_info", "IP 대역 정보 표시", "닉네임 옆에 내장 대역표의 통신사·지역 추정을 표시합니다. 긴 문구는 오른쪽 버튼으로 전체를 볼 수 있습니다. 외부 조회는 하지 않습니다.");
+        choice(body, "collapse_long_ip_info", "IP 정보 기본 접기", "긴 IP 대역 문구를 처음에는 한 줄로 줄여 보입니다. 닉네임 옆에 일부 내용이 남고, 오른쪽 버튼으로 같은 문구를 펼치거나 접습니다.");
+
+        section(body, "광고·추적");
+        choice(body, "block_naver_web_tracking", "네이버 웹 추적 로드 안 함", "게시글 웹 화면에 네이버 통계 스크립트를 넣지 않고, 남은 wcs.naver.com·wcs.naver.net 요청도 차단합니다. 네이버 전체 주소는 차단하지 않습니다.");
+        choice(body, "block_web_ad_requests", "남은 웹 광고 요청 차단", "게시글 웹 화면에서 알려진 광고 전용 호스트로 향하는 요청만 차단합니다. 앱 자체 광고 로더 제거는 패치 설치 시 적용되어 이 스위치로 복원되지 않습니다.");
 
         section(body, "동작 및 배터리");
         choice(body, "reduce_config_refresh", "중복 새로고침 제한", "홈 화면을 떠날 때 서버 설정을 반복 확인하는 횟수를 줄입니다. 서버의 새 설정 반영이 늦어질 수 있습니다.");
@@ -137,7 +142,7 @@ public final class MorpheSettingsActivity extends Activity {
         title.setTypeface(null, Typeface.BOLD);
         shortcut.addView(title);
         TextView summary = new TextView(root.getContext());
-        summary.setText("홈 화면 · 게시글 · 작성자 정보 · 동작");
+        summary.setText("홈 화면 · 게시글 · 작성자 정보 · 광고·추적 · 동작");
         summary.setTextSize(13);
         summary.setPadding(0, d / 3, 0, 0);
         shortcut.addView(summary);
