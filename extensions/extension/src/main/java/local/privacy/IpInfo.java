@@ -9,8 +9,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Locale;
 
-/** Offline two-octet range hints copied from a community memo preset. */
+/** Offline range hints from a community post, never an identity lookup. */
 public final class IpInfo {
     private static volatile Map<String, String> prefixLabels;
 
@@ -32,16 +33,30 @@ public final class IpInfo {
 
     private static String prefixEstimate(String ip) {
         if (ip == null) return null;
-        String[] parts = ip.split("\\.", -1);
+        String visible = ip.trim().toLowerCase(Locale.ROOT);
+        if (visible.indexOf(':') >= 0) {
+            String[] groups = visible.split(":", -1);
+            if (groups.length < 2 || !validHextet(groups[0]) || !validHextet(groups[1])) return null;
+            return labels().get(groups[0] + ":" + groups[1]);
+        }
+        String[] parts = visible.split("\\.", -1);
         if (parts.length != 2 && parts.length != 4) return null;
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < parts.length; i++) {
             if (parts[i].isEmpty() || parts[i].length() > 3) return null;
             try {
                 int value = Integer.parseInt(parts[i]);
                 if (value < 0 || value > 255) return null;
             } catch (NumberFormatException ignored) { return null; }
         }
+        if (parts.length == 4) {
+            String exact = labels().get(visible);
+            if (exact != null) return exact;
+        }
         return labels().get(parts[0] + "." + parts[1]);
+    }
+
+    private static boolean validHextet(String part) {
+        return part.length() > 0 && part.length() <= 4 && part.matches("[0-9a-f]{1,4}");
     }
 
     private static Map<String, String> labels() {
@@ -62,7 +77,12 @@ public final class IpInfo {
                             if (dash <= 0 || dash >= line.length() - 1) continue;
                             String key = line.substring(0, dash).trim();
                             String value = line.substring(dash + 1).trim();
-                            if (!key.matches("[0-9]{1,3}\\.[0-9]{1,3}") || value.isEmpty()) continue;
+                            if (key.matches("[0-9a-f]{1,4}:[0-9a-f]{1,4}::/32")) {
+                                key = key.substring(0, key.indexOf("::"));
+                            }
+                            if (!key.matches("[0-9]{1,3}\\.[0-9]{1,3}(?:\\.[0-9]{1,3}){0,2}")
+                                    && !key.matches("[0-9a-f]{1,4}:[0-9a-f]{1,4}")) continue;
+                            if (value.isEmpty()) continue;
                             entries.computeIfAbsent(key, unused -> new LinkedHashSet<>()).add(value);
                         }
                     } catch (Exception ignored) { }
