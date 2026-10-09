@@ -29,10 +29,12 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.1.4) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.1.5) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 
 ## Limits
+
+Version 1.1.5 reduces extension overhead: disabled author-ID display skips the ID getter, offline IP-list validation reuses compiled patterns, IPv6 group checks avoid regex compilation, and ordinary WebView hosts skip ad/tracking preference reads. These changes preserve the existing options and host list. The bundle was built, but runtime tests and CPU measurements were skipped at the user's request; no quantified CPU or battery improvement is claimed.
 
 No claim of battery-life improvement is made without device measurements. The optional refresh limiter may defer new server settings, so leave it off if immediate settings updates matter. Never disable push messaging, user-selected automatic backups, server configuration, login, or media features solely to save battery. The source may need revision after an app update; there is no safe unconditional patch for all future versions.

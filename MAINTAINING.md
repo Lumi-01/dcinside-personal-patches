@@ -43,4 +43,6 @@ The [Ample bundle](https://github.com/AmpleReVanced/revanced-patches) currently 
 
 ## Release maintenance
 
+For 1.1.5, only extension overhead was reduced: optional list/comment ID getters, IP validation pattern construction and WebView preference reads for unrelated hosts. No vendor lifecycle, refresh interval, content API or layout was changed. Runtime regression tests, original-APK patch application and CPU measurements were intentionally skipped at the user's request. Retest these before treating 1.1.5 as verified; compilation alone establishes neither runtime compatibility nor a measured CPU reduction.
+
 For a manual release, update `version` in `gradle.properties`, build with `buildAndroid generatePatchesList`, upload the resulting `patches-<version>.mpp` to the matching `v<version>` GitHub release, and update `patches-bundle.json` with its URL, version and UTC creation time. Use `yyyy-MM-ddTHH:mm:ss` without a trailing `Z` for `created_at`; Morphe Manager 1.34.0 rejects the `Z` suffix and reports `Metadata N/A`. Check the released asset hash against the locally built bundle, then confirm Morphe Manager can read the repository as a patch source. The optional release workflow is manual-only (`workflow_dispatch`); it must not be used on top of a release already created by hand.

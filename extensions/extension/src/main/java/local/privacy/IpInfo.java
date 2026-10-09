@@ -10,17 +10,26 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /** Offline range hints from a community post, never an identity lookup. */
 public final class IpInfo {
     private static volatile Map<String, String> prefixLabels;
 
+    /** Compile list-validation patterns once, only when the offline list is read. */
+    private static final class ListPatterns {
+        static final Pattern IPV6_RANGE = Pattern.compile("[0-9a-f]{1,4}:[0-9a-f]{1,4}::/32");
+        static final Pattern IPV4 = Pattern.compile("[0-9]{1,3}\\.[0-9]{1,3}(?:\\.[0-9]{1,3}){0,2}");
+        static final Pattern IPV6 = Pattern.compile("[0-9a-f]{1,4}:[0-9a-f]{1,4}");
+    }
+
     private IpInfo() { }
 
     public static Spannable decorateRendered(Spannable rendered, String ip) {
         if (!SettingsState.get("show_ip_info") || rendered == null) return rendered;
+        if (!rendered.toString().contains("(" + ip + ")")) return rendered;
         String estimate = prefixEstimate(ip);
-        if (estimate == null || !rendered.toString().contains("(" + ip + ")")) return rendered;
+        if (estimate == null) return rendered;
         return new SpannableStringBuilder(rendered).append(" · ").append(estimate).append('\u00a0');
     }
 
@@ -56,7 +65,13 @@ public final class IpInfo {
     }
 
     private static boolean validHextet(String part) {
-        return part.length() > 0 && part.length() <= 4 && part.matches("[0-9a-f]{1,4}");
+        int length = part.length();
+        if (length == 0 || length > 4) return false;
+        for (int i = 0; i < length; i++) {
+            char digit = part.charAt(i);
+            if ((digit < '0' || digit > '9') && (digit < 'a' || digit > 'f')) return false;
+        }
+        return true;
     }
 
     private static Map<String, String> labels() {
@@ -77,11 +92,11 @@ public final class IpInfo {
                             if (dash <= 0 || dash >= line.length() - 1) continue;
                             String key = line.substring(0, dash).trim();
                             String value = line.substring(dash + 1).trim();
-                            if (key.matches("[0-9a-f]{1,4}:[0-9a-f]{1,4}::/32")) {
+                            if (ListPatterns.IPV6_RANGE.matcher(key).matches()) {
                                 key = key.substring(0, key.indexOf("::"));
                             }
-                            if (!key.matches("[0-9]{1,3}\\.[0-9]{1,3}(?:\\.[0-9]{1,3}){0,2}")
-                                    && !key.matches("[0-9a-f]{1,4}:[0-9a-f]{1,4}")) continue;
+                            if (!ListPatterns.IPV4.matcher(key).matches()
+                                    && !ListPatterns.IPV6.matcher(key).matches()) continue;
                             if (value.isEmpty()) continue;
                             entries.computeIfAbsent(key, unused -> new LinkedHashSet<>()).add(value);
                         }

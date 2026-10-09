@@ -34,17 +34,20 @@ public final class AuthorInfo {
 
     private static String withId(String name, String id) {
         if (name == null) name = "";
-        if (!SettingsState.get("show_author_id") || id == null || id.trim().isEmpty()
-                || id.trim().equals(name)) return name;
-        return name + " (" + id.trim() + ")";
+        if (id == null) return name;
+        String visibleId = id.trim();
+        if (visibleId.isEmpty() || visibleId.equals(name)) return name;
+        return name + " (" + visibleId + ")";
     }
 
     public static String listName(Object post) {
-        return withId(value(post, "z"), value(post, "S"));
+        String name = value(post, "z");
+        return withId(name, SettingsState.get("show_author_id") ? value(post, "S") : null);
     }
 
     public static String commentName(Object comment) {
-        return withId(value(comment, "Y"), value(comment, "h0"));
+        String name = value(comment, "Y");
+        return withId(name, SettingsState.get("show_author_id") ? value(comment, "h0") : null);
     }
 
     public static void applyPostHeader(View header, Object post) {
