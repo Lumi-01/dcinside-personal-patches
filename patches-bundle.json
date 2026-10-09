@@ -1,8 +1,7 @@
 {
-  "created_at": "2026-10-08T05:12:39",
-  "description": "Experimental DC Inside 5.3.6 cleanup with in-app controls, inline IP details from the monochrome gallery list, and source-level Naver analytics removal",
-  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.1.4/patches-1.1.4.mpp",
+  "created_at": "2026-10-09T05:24:09",
+  "description": "Experimental DC Inside 5.3.6 cleanup: reduced optional ID, IP validation and WebView preference overhead; runtime tests and CPU measurement skipped at user request",
+  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.1.5/patches-1.1.5.mpp",
   "signature_download_url": "",
-  "version": "1.1.4"
+  "version": "1.1.5"
 }
-
