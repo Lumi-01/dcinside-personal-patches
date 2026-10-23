@@ -4,7 +4,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Filters only the verified DC Inside 5.3.6 home adapter item types. */
+/** Filters only the verified DC Inside home adapter item types. */
 public final class HomeFilter {
     private static volatile Method typeGetter;
 
@@ -13,12 +13,20 @@ public final class HomeFilter {
     public static List<?> filter(List<?> items) {
         int mask = SettingsState.homeMask();
         if (items == null || items.isEmpty() || mask == 0) return items;
-        ArrayList<Object> result = new ArrayList<>(items.size());
+        ArrayList<Object> result = null;
+        int index = 0;
         for (Object item : items) {
-            int type = itemType(item);
-            if (!hidden(type, mask)) result.add(item);
+            if (hidden(itemType(item), mask)) {
+                if (result == null) {
+                    result = new ArrayList<>(items.size());
+                    result.addAll(items.subList(0, index));
+                }
+            } else if (result != null) {
+                result.add(item);
+            }
+            index++;
         }
-        return result;
+        return result == null ? items : result;
     }
 
     private static int itemType(Object item) {

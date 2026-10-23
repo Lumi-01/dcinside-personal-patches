@@ -11,10 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AuthorInfo {
     private static final ConcurrentHashMap<Class<?>, ConcurrentHashMap<String, Method>> GETTERS =
             new ConcurrentHashMap<>();
-    private static String postName = "z", postId = "S", commentId = "h0", headerId = "W1";
+    private static volatile int cachedButtonId, cachedNameId;
+    private static String postId = "S", commentId = "h0", headerId = "W1";
     private AuthorInfo() { }
     public static void configure(boolean modern) {
-        postName = modern ? "y" : "z";
         postId = modern ? "Q" : "S";
         commentId = modern ? "g0" : "h0";
         headerId = modern ? "X1" : "W1";
@@ -47,33 +47,46 @@ public final class AuthorInfo {
         return name + " (" + visibleId + ")";
     }
 
-    public static String listName(Object post) {
-        String name = value(post, postName);
+    public static String listName(Object post, String name) {
         return withId(name, SettingsState.get("show_author_id") ? value(post, postId) : null);
     }
 
-    public static String commentName(Object comment) {
-        String name = value(comment, "Y");
+    public static String commentName(Object comment, String name) {
         return withId(name, SettingsState.get("show_author_id") ? value(comment, commentId) : null);
     }
 
     public static void applyPostHeader(View header, Object post) {
         if (header == null || post == null) return;
-        int buttonId = header.getResources().getIdentifier("lumi_read_ip_expand", "id",
-                header.getContext().getPackageName());
-        int nameId = header.getResources().getIdentifier("read_header_name", "id",
-                header.getContext().getPackageName());
+        int buttonId = cachedButtonId;
+        int nameId = cachedNameId;
+        if (buttonId == 0 || nameId == 0) {
+            String packageName = header.getContext().getPackageName();
+            buttonId = header.getResources().getIdentifier("lumi_read_ip_expand", "id", packageName);
+            nameId = header.getResources().getIdentifier("read_header_name", "id", packageName);
+            if (buttonId != 0 && nameId != 0) {
+                cachedButtonId = buttonId;
+                cachedNameId = nameId;
+            }
+        }
         if (buttonId == 0 || nameId == 0) return;
         View buttonView = header.findViewById(buttonId);
         View nameView = header.findViewById(nameId);
         if (!(buttonView instanceof TextView) || !(nameView instanceof TextView)) return;
         TextView button = (TextView) buttonView;
         TextView name = (TextView) nameView;
-        String userId = value(post, headerId);
+        final int tagId = nameId;
+        boolean showId = SettingsState.get("show_author_id");
+        boolean showIp = SettingsState.get("show_ip_info");
+        name.setTag(tagId, post);
+        if (!showId && !showIp) {
+            button.setVisibility(View.GONE);
+            button.setOnClickListener(null);
+            return;
+        }
+        String userId = showId ? value(post, headerId) : null;
         String rawIp = value(post, "b");
-        name.setTag(nameId, post);
         name.post(() -> {
-            if (name.getTag(nameId) != post) return;
+            if (name.getTag(tagId) != post) return;
             decoratePostName(name, userId, rawIp);
             boolean hasIp = SettingsState.get("show_ip_info")
                     && rawIp != null && !rawIp.trim().isEmpty();
@@ -88,7 +101,7 @@ public final class AuthorInfo {
             button.setOnClickListener(view -> setExpanded(name, button,
                     name.getMaxLines() == 1));
             if (!open) name.post(() -> {
-                if (name.getTag(nameId) != post || name.getLayout() == null) return;
+                if (name.getTag(tagId) != post || name.getLayout() == null) return;
                 // A short name and range need no expand control.
                 if (name.getLayout().getEllipsisCount(0) == 0) button.setVisibility(View.GONE);
             });
@@ -108,19 +121,19 @@ public final class AuthorInfo {
     }
 
     private static void decoratePostName(TextView name, String userId, String rawIp) {
+        if (!SettingsState.get("show_author_id") || userId == null) return;
+        String id = userId.trim();
+        if (id.isEmpty()) return;
         CharSequence current = name.getText();
         if (current == null || current.length() == 0) return;
+        String label = " (" + id + ")";
+        String text = current.toString();
+        if (text.contains("(" + id + ")")) return;
+        String ip = rawIp == null ? "" : rawIp.trim();
+        int ipStart = ip.isEmpty() ? -1 : text.indexOf("(" + ip + ")");
         SpannableStringBuilder updated = new SpannableStringBuilder(current);
-        if (SettingsState.get("show_author_id") && userId != null && !userId.trim().isEmpty()) {
-            String id = userId.trim();
-            if (!updated.toString().contains("(" + id + ")")) {
-                String label = " (" + id + ")";
-                String ip = rawIp == null ? "" : rawIp.trim();
-                int ipStart = ip.isEmpty() ? -1 : updated.toString().indexOf("(" + ip + ")");
-                if (ipStart >= 0) updated.insert(ipStart, label + " ");
-                else updated.append(label);
-            }
-        }
-        if (!updated.toString().contentEquals(current)) name.setText(updated);
+        if (ipStart >= 0) updated.insert(ipStart, label + " ");
+        else updated.append(label);
+        name.setText(updated);
     }
 }

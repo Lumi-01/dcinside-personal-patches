@@ -59,3 +59,11 @@ Reviewed mappings include the WebView client/builder, Remote Config class and ca
 The final 1.2.0 bundle built and applied all four patches to both original 5.3.18 and 5.3.6 APKs. Signed output verification passed for 5.3.18. These checks establish patch generation, not complete runtime behavior or Android 17 compatibility. No CPU or battery measurement was performed for this compatibility port.
 
 Android 15 emulator smoke check (2026-10-23): installed the signed 5.3.18 output, loaded the home list and a post body, opened the native settings and the in-app Morphe screen (first option visible), and enabled home search/menu hiding. The home search/menu section disappeared on return. Crash buffer remained empty. This did not cover authenticated login, writing, Android 17, every optional switch, or every possible ad placement.
+
+## 1.2.1 rendering overhead
+
+The author hook now passes the original getter result into the extension. It validates that receiver/result are distinct and fit the two-register invoke form on both reviewed APKs. Do not overwrite the model receiver or call the nickname getter twice. Header view resource IDs are cached per process; disabled author options still clear the recycled expand button and invalidate pending work but skip reflection/posting. Home filtering returns the original list if no row is removed, preserving ordering and leaving the input untouched.
+
+Run `python scripts/check-render-work.py` with `JAVA_HOME` and `ANDROID_HOME` set. Its host checks use the Android SDK API jar plus a test-only preference fixture: 20,000 disabled-ID formatting calls invoke no model getter; enabled ID labels use both version mappings; home filtering preserves identity when unchanged, order, null/unknown rows and input contents. It does not emulate Android layout or measure CPU. Both original APKs must still pass actual Morphe application.
+
+1.2.1 Android 15 smoke check: signed 5.3.18 APK updated successfully; home and post body loaded; comment screen displayed names, masked IPs and comment content; crash buffer stayed empty. Host checks cover enabled IDs; enabled-ID Android layout and authenticated workflows were not rechecked in this release. No percentage CPU measurement was made.

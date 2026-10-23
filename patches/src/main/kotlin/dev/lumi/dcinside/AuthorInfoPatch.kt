@@ -75,8 +75,11 @@ private fun MutableMethod.decorateGetter(owner: String, getter: String, formatte
         val receiver = (instructions[index] as? FiveRegisterInstruction)?.registerC
             ?: error("Unexpected getter invoke format")
         val nameRegister = (instructions[index + 1] as OneRegisterInstruction).registerA
+        check(receiver != nameRegister && receiver <= 15 && nameRegister <= 15) {
+            "Author render registers changed in $name"
+        }
         addInstructions(index + 2, """
-            invoke-static/range {v$receiver .. v$receiver}, Llocal/privacy/AuthorInfo;->$formatter(Ljava/lang/Object;)Ljava/lang/String;
+            invoke-static {v$receiver, v$nameRegister}, Llocal/privacy/AuthorInfo;->$formatter(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;
             move-result-object v$nameRegister
         """.trimIndent())
     }

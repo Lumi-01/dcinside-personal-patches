@@ -29,11 +29,13 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.0) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.1) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 
 ## Limits
+
+Version 1.2.1 reduces rendering-helper work: list/comment formatting reuses the nickname already read by the app instead of reflecting it again, disabled author features skip header model lookups and posted decoration, header resource IDs are resolved once, and the home filter copies only when it actually hides an item. These are targeted reductions in extension work, not a measured percentage reduction of overall app CPU or battery use. The native refresh cadence, content requests and animations are unchanged.
 
 Version 1.2.0 ports the WebView, ad/footer/list, home, author-ID and configuration-fallback hooks to 5.3.18. The reported `wv/a.shouldInterceptRequest` failure was caused by renamed vendor code, not the phone model or free memory. The patch checks exact supported versions and retains 5.3.6 mappings; a future update still requires APK review.
 
