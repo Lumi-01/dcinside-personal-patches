@@ -21,7 +21,8 @@ val authorInfoPatch = bytecodePatch(
     dependsOn(dcInsidePersonalPatch)
 
     execute {
-        val header = Fingerprint(
+        val target = DcTarget(packageMetadata.versionName)
+        val header = target.fingerprint(
             definingClass = "Lcom/dcinside/app/view/PostReadHeaderView;",
             name = "Y",
             parameters = listOf("Lcom/dcinside/app/model/PostInfo;", "Z", "Ljava/lang/String;"),
@@ -34,7 +35,7 @@ val authorInfoPatch = bytecodePatch(
 
         // The app's shared author renderer appends the visible IP in parentheses.
         // Decorate its completed text so the hint follows the IP, not the nickname.
-        val authorSpan = Fingerprint(
+        val authorSpan = target.fingerprint(
             definingClass = "Lcom/dcinside/app/span/g;",
             name = "t",
             returnType = "Landroid/text/Spannable;",
@@ -50,10 +51,10 @@ val authorInfoPatch = bytecodePatch(
             "Lcom/dcinside/app/post/X2;" to "s0",
             "Lcom/dcinside/app/post/fragments/u0;" to "i0",
         ).forEach { (owner, name) ->
-            Fingerprint(definingClass = owner, name = name, returnType = "V")
-                .method.decorateGetter("Lcom/dcinside/app/response/PostItem;", "z", "listName")
+            target.fingerprint(definingClass = owner, name = name, returnType = "V")
+                .method.decorateGetter("Lcom/dcinside/app/response/PostItem;", target.name("Lcom/dcinside/app/response/PostItem;", "z"), "listName")
         }
-        Fingerprint(
+        target.fingerprint(
             definingClass = "Lcom/dcinside/app/read/V\$b;", name = "d",
             parameters = listOf("Landroid/content/Context;", "Lcom/dcinside/app/response/m;"),
             returnType = "Ljava/lang/CharSequence;",

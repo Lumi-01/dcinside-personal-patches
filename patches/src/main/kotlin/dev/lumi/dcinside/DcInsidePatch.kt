@@ -23,7 +23,7 @@ internal val compatibility = Compatibility(
     appIconColor = 0x495C9E,
     targets = listOf(
         AppTarget(version = "5.3.6", isExperimental = true),
-        AppTarget(version = null, isExperimental = true)
+        AppTarget(version = "5.3.18", isExperimental = true)
     )
 )
 
@@ -192,11 +192,14 @@ val dcInsidePersonalPatch = bytecodePatch(
     dependsOn(nativeCertificatePatch)
     extendWith("extensions/extension.mpe")
     execute {
+        val target = DcTarget(packageMetadata.versionName)
         // Initialize the certificate adapter before native app-identity calls.
-        val appCreate = Fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "onCreate", returnType = "V").method
+        val appCreate = target.fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "onCreate", returnType = "V").method
         appCreate.addInstructions(0, "invoke-static {p0}, $CERT->init(Landroid/content/Context;)V")
         appCreate.addInstructions(0, "invoke-static {p0}, Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V")
-        val settingsView = Fingerprint(definingClass = "Lcom/dcinside/app/settings/K1;", name = "onViewCreated",
+        val modernFlag = if (target.modern) "0x1" else "0x0"
+        appCreate.addInstructions(0, "const/4 v0, $modernFlag\ninvoke-static {v0}, Llocal/privacy/AuthorInfo;->configure(Z)V\ninvoke-static {v0}, Llocal/privacy/RemoteConfigFallback;->configure(Z)V")
+        val settingsView = target.fingerprint(definingClass = "Lcom/dcinside/app/settings/K1;", name = "onViewCreated",
             parameters = listOf("Landroid/view/View;", "Landroid/os/Bundle;"), returnType = "V").method
         val settingsSuper = settingsView.implementation!!.instructions.indexOfFirst { instruction ->
             val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
@@ -205,7 +208,7 @@ val dcInsidePersonalPatch = bytecodePatch(
         check(settingsSuper >= 0) { "Settings screen lifecycle changed" }
         settingsView.addInstructions(settingsSuper + 1,
             "invoke-static {p1}, Llocal/privacy/MorpheSettingsActivity;->bindSettingsShortcut(Landroid/view/View;)V")
-        val postHtml = Fingerprint(definingClass = "Lcom/dcinside/app/read/V;", name = "b",
+        val postHtml = target.fingerprint(definingClass = "Lcom/dcinside/app/read/V;", name = "b",
             parameters = emptyList(), returnType = "Ljava/lang/String;").method
         val htmlReturn = postHtml.implementation!!.instructions.indexOfLast { it.opcode == Opcode.RETURN_OBJECT }
         check(htmlReturn >= 0) { "Post HTML getter changed" }
@@ -214,7 +217,7 @@ val dcInsidePersonalPatch = bytecodePatch(
             invoke-static {v$htmlRegister}, Llocal/privacy/AutoImageFilter;->filter(Ljava/lang/String;)Ljava/lang/String;
             move-result-object v$htmlRegister
         """.trimIndent())
-        Fingerprint(definingClass = "Lcom/dcinside/app/wv/a;", name = "shouldInterceptRequest",
+        target.fingerprint(definingClass = "Lcom/dcinside/app/wv/a;", name = "shouldInterceptRequest",
             parameters = listOf("Landroid/webkit/WebView;", "Landroid/webkit/WebResourceRequest;"),
             returnType = "Landroid/webkit/WebResourceResponse;").method.addInstructionsWithLabels(0, """
                 invoke-static {p2}, Llocal/privacy/WebResourceBlocker;->intercept(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
@@ -226,7 +229,7 @@ val dcInsidePersonalPatch = bytecodePatch(
             """.trimIndent())
         // The post WebView builder itself adds Naver analytics scripts. Suppress
         // those script tags before the WebView can request either script or beacon.
-        val webBuilder = Fingerprint(definingClass = "Lcom/dcinside/app/wv/l;", name = "<init>",
+        val webBuilder = target.fingerprint(definingClass = "Lcom/dcinside/app/wv/l;", name = "<init>",
             parameters = listOf("Landroid/content/Context;", "Lorg/jsoup/nodes/f;", "Z", "Z", "Z", "I",
                 "Lcom/dcinside/app/wv/r;", "Z", "Ljava/lang/Float;", "Z", "Z", "Z"),
             returnType = "V").method
@@ -239,6 +242,8 @@ val dcInsidePersonalPatch = bytecodePatch(
             webBuilder.implementation!!.instructions[index].opcode == Opcode.IF_EQZ
         }
         check(scriptGuard != null && scriptAnchor - scriptGuard < 10) { "Naver analytics guard changed" }
+        check((webBuilder.implementation!!.instructions[scriptGuard] as OneRegisterInstruction).registerA ==
+            webBuilder.implementation!!.registerCount - 13 + 10) { "Analytics parameter moved" }
         webBuilder.addInstructions(scriptGuard, """
             invoke-static/range {p10 .. p10}, Llocal/privacy/WebResourceBlocker;->allowNaverAnalytics(Z)Z
             move-result p10
@@ -258,7 +263,7 @@ val dcInsidePersonalPatch = bytecodePatch(
         appCreate.replaceInstruction(crashSwitch, "nop")
 
         // Preserve the vendor allowlist; add only the certificate installed by Morphe.
-        val allowed = Fingerprint(
+        val allowed = target.fingerprint(
             definingClass = "Lcom/dcinside/app/auth/b;", name = "f",
             parameters = listOf("Lcom/dcinside/app/auth/i0;"), returnType = "Ljava/util/Set;"
         ).method
@@ -274,57 +279,57 @@ val dcInsidePersonalPatch = bytecodePatch(
         }
 
         // Fixed-value ad configuration; validate every method before changing it.
-        Fingerprint(definingClass = CONFIG, name = "d", parameters = listOf("Ljava/lang/String;"),
+        target.fingerprint(definingClass = CONFIG, name = "d", parameters = listOf("Ljava/lang/String;"),
             returnType = "Ljava/util/List;").method.addInstructions(0, """
                 invoke-static {}, Ljava/util/Collections;->emptyList()Ljava/util/List;
                 move-result-object p0
                 return-object p0
             """.trimIndent())
         listOf("r", "C0", "v0", "I0", "J0", "K0", "L0").forEach { name ->
-            Fingerprint(definingClass = CONFIG, name = name, returnType = "Z")
+            target.fingerprint(definingClass = CONFIG, name = name, returnType = "Z")
                 .method.addInstructions(0, "const/4 p0, 0x0\nreturn p0")
         }
         listOf("t", "t0").forEach { name ->
-            Fingerprint(definingClass = CONFIG, name = name, returnType = "I")
+            target.fingerprint(definingClass = CONFIG, name = name, returnType = "I")
                 .method.addInstructions(0, "const/4 p0, 0x0\nreturn p0")
         }
         listOf("x", "y", "s0").forEach { name ->
-            Fingerprint(definingClass = CONFIG, name = name, returnType = "Ljava/lang/String;")
+            target.fingerprint(definingClass = CONFIG, name = name, returnType = "Ljava/lang/String;")
                 .method.addInstructions(0, "const-string p0, \"\"\nreturn-object p0")
         }
-        Fingerprint(definingClass = "Lcom/dcinside/app/ad/support/J;", name = "a",
+        target.fingerprint(definingClass = "Lcom/dcinside/app/ad/support/J;", name = "a",
             parameters = listOf("Landroidx/appcompat/app/AppCompatActivity;"), returnType = "V")
             .method.addInstructions(0, "return-void")
-        Fingerprint(definingClass = "LF/a\$a;", name = "a",
+        target.fingerprint(definingClass = "LF/a\$a;", name = "a",
             parameters = listOf("Ljava/util/List;"), returnType = "I")
             .method.addInstructions(0, "const/4 p0, 0x0\nreturn p0")
-        Fingerprint(definingClass = "Lcom/dcinside/app/ad/support/a;", name = "b",
+        target.fingerprint(definingClass = "Lcom/dcinside/app/ad/support/a;", name = "b",
             parameters = listOf("Lkotlin/jvm/functions/Function1;"), returnType = "V")
             .method.addInstructions(0, """
                 const/4 v0, 0x0
                 invoke-interface {p1, v0}, Lkotlin/jvm/functions/Function1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
                 return-void
             """.trimIndent())
-        Fingerprint(definingClass = "Lcom/dcinside/app/util/b;", name = "b",
+        target.fingerprint(definingClass = "Lcom/dcinside/app/util/b;", name = "b",
             parameters = listOf("Landroid/content/Context;", "Lcom/dcinside/app/util/b\$a;"),
             returnType = "V").method.addInstructions(0, "return-void")
-        Fingerprint(definingClass = "Lcom/dcinside/app/post/h;", name = "h",
+        target.fingerprint(definingClass = "Lcom/dcinside/app/post/h;", name = "h",
             parameters = listOf("Landroidx/appcompat/app/AppCompatActivity;"), returnType = "V")
             .method.addInstructions(0, "return-void")
         listOf("A2" to emptyList<String>(), "F2" to listOf("Ljava/lang/String;"),
             "x0" to emptyList()).forEach { (name, parameters) ->
-            Fingerprint(definingClass = "Lcom/dcinside/app/post/fragments/z3;", name = name,
+            target.fingerprint(definingClass = "Lcom/dcinside/app/post/fragments/z3;", name = name,
                 parameters = parameters, returnType = "V")
                 .method.addInstructions(0, "return-void")
         }
-        Fingerprint(definingClass = "Lcom/dcinside/app/view/f0;", name = "x0", returnType = "V")
+        target.fingerprint(definingClass = "Lcom/dcinside/app/view/f0;", name = "x0", returnType = "V")
             .method.addInstructions(0, "return-void")
         // These ad views remain in RecyclerView/footer layouts even when ad requests are disabled.
         // Collapse their own bounds without touching post rows or user controls.
         listOf("t1" to "g", "v1" to "d").forEach { (name, field) ->
-            Fingerprint(definingClass = "Lcom/dcinside/app/view/f0;", name = name,
+            target.fingerprint(definingClass = "Lcom/dcinside/app/view/f0;", name = name,
                 parameters = listOf("Landroidx/lifecycle/LifecycleOwner;", "Lcom/dcinside/app/read/V\$a;"),
-                returnType = "V").method.addInstructions(0, """
+                returnType = "V").method.addInstructions(0, target.smali("""
                     iget-object v0, p0, Lcom/dcinside/app/view/f0;->I:LO/N7;
                     iget-object v1, v0, LO/N7;->$field:Landroid/widget/LinearLayout;
                     const/4 v2, 0x0
@@ -334,36 +339,36 @@ val dcInsidePersonalPatch = bytecodePatch(
                     iget-object v1, v0, LO/N7;->h:Landroid/view/View;
                     invoke-virtual {v1, v2}, Landroid/view/View;->setVisibility(I)V
                     return-void
-                """.trimIndent())
+                """.trimIndent()))
         }
-        Fingerprint(definingClass = "Lcom/dcinside/app/post/fragments/E2;", name = "k",
+        target.fingerprint(definingClass = "Lcom/dcinside/app/post/fragments/E2;", name = "k",
             parameters = listOf("Landroidx/lifecycle/LifecycleOwner;", "Ljava/lang/String;", "I", "Z", "LF/d;"),
-            returnType = "V").method.addInstructions(0, """
+            returnType = "V").method.addInstructions(0, target.smali("""
                 const/16 v1, 0x8
                 iget-object v0, p0, Lcom/dcinside/app/post/fragments/E2;->g:Landroid/widget/FrameLayout;
                 invoke-virtual {v0, v1}, Landroid/view/View;->setVisibility(I)V
                 iget-object v0, p0, Lcom/dcinside/app/post/fragments/E2;->h:Landroid/view/View;
                 invoke-virtual {v0, v1}, Landroid/view/View;->setVisibility(I)V
                 return-void
-            """.trimIndent())
+            """.trimIndent()))
         listOf("c" to "k", "e" to "i").forEach { (owner, name) ->
-            Fingerprint(definingClass = "Lcom/dcinside/app/ad/naver/$owner;", name = name,
+            target.fingerprint(definingClass = "Lcom/dcinside/app/ad/naver/$owner;", name = name,
                 parameters = listOf("Landroidx/lifecycle/LifecycleOwner;", "Ljava/lang/String;",
                     "Ljava/lang/String;", "Lcom/dcinside/app/ad/naver/a;"), returnType = "V")
-                .method.addInstructions(0, """
+                .method.addInstructions(0, target.smali("""
                     iget-object v0, p0, Landroidx/recyclerview/widget/RecyclerView${'$'}ViewHolder;->itemView:Landroid/view/View;
                     const/16 v1, 0x8
                     invoke-virtual {v0, v1}, Landroid/view/View;->setVisibility(I)V
                     const/4 v1, 0x0
                     invoke-virtual {v0, v1}, Landroid/view/View;->setMinimumHeight(I)V
                     return-void
-                """.trimIndent())
+                """.trimIndent()))
         }
-        Fingerprint(definingClass = "Lcom/dcinside/app/post/X2;", name = "a0",
+        target.fingerprint(definingClass = "Lcom/dcinside/app/post/X2;", name = "a0",
             parameters = listOf("Lcom/dcinside/app/response/j;", "Z"), returnType = "Z")
             .method.addInstructions(0, "const/4 p0, 0x0\nreturn p0")
         // Preserve the bottom navigation; override only the ad strip's later visibility toggle.
-        val quickBar = Fingerprint(definingClass = "Lcom/dcinside/app/post/fragments/w2;", name = "f5",
+        val quickBar = target.fingerprint(definingClass = "Lcom/dcinside/app/post/fragments/w2;", name = "f5",
             parameters = listOf("Z"), returnType = "V").method
         val visibilityCalls = quickBar.implementation!!.instructions.withIndex().filter { (_, insn) ->
             val ref = (insn as? ReferenceInstruction)?.reference as? MethodReference
@@ -378,32 +383,33 @@ val dcInsidePersonalPatch = bytecodePatch(
                 "Llocal/privacy/AdSpace;->keepGone(Landroid/view/View;I)V")
 
         // Reuse activated values on transient configuration failure; throttle only redundant home-stop refreshes.
-        val configCallback = Fingerprint(definingClass = CONFIG, name = "c",
+        val configCallback = target.fingerprint(definingClass = CONFIG, name = "c",
             parameters = listOf("LW3/o;", "Lcom/google/android/gms/tasks/Task;"), returnType = "V").method
         val taskResultIndex = configCallback.implementation!!.instructions.indexOfFirst {
             val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
             ref?.definingClass == "Lcom/google/android/gms/tasks/Task;" && ref.name == "isSuccessful"
         }
         check(taskResultIndex >= 0 && configCallback.implementation!!.instructions[taskResultIndex + 1].opcode == Opcode.MOVE_RESULT)
+        val resultRegister = (configCallback.implementation!!.instructions[taskResultIndex + 1] as OneRegisterInstruction).registerA
         configCallback.addInstructions(taskResultIndex + 2, """
-            invoke-static {v0}, Llocal/privacy/RemoteConfigFallback;->successOrActivated(Z)Z
-            move-result v0
+            invoke-static {v$resultRegister}, Llocal/privacy/RemoteConfigFallback;->successOrActivated(Z)Z
+            move-result v$resultRegister
         """.trimIndent())
-        val startupTimeout = Fingerprint(definingClass = "Lcom/dcinside/app/main/A0;", name = "F2",
+        val startupTimeout = target.fingerprint(definingClass = "Lcom/dcinside/app/main/A0;", name = "F2",
             parameters = listOf("Lcom/dcinside/app/main/A0;", "Landroidx/fragment/app/FragmentActivity;",
                 "Ljava/lang/Throwable;"), returnType = "V").method
         val startupCheck = startupTimeout.implementation!!.instructions.indexOfFirst {
             val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
-            ref?.definingClass == "Lcom/dcinside/app/util/ms;" && ref.name == "y"
+            ref?.definingClass == target.type("Lcom/dcinside/app/util/ms;") && ref.name == "y"
         }
         check(startupCheck >= 0 && startupTimeout.implementation!!.instructions[startupCheck + 1].opcode == Opcode.MOVE_RESULT)
         startupTimeout.addInstructions(startupCheck + 2, """
             invoke-static {p1}, Llocal/privacy/RemoteConfigFallback;->successOrActivated(Z)Z
             move-result p1
         """.trimIndent())
-        Fingerprint(definingClass = CONFIG, name = "b", parameters = listOf("LW3/o;"), returnType = "V")
+        target.fingerprint(definingClass = CONFIG, name = "b", parameters = listOf("LW3/o;"), returnType = "V")
             .method.addInstructions(0, "invoke-static {}, Llocal/privacy/RemoteConfigRefreshGate;->markAttempt()V")
-        val homeStop = Fingerprint(definingClass = "Lcom/dcinside/app/main/E1;", name = "onStop", returnType = "V").method
+        val homeStop = target.fingerprint(definingClass = "Lcom/dcinside/app/main/E1;", name = "onStop", returnType = "V").method
         val superStop = homeStop.implementation!!.instructions.indexOfFirst { it.opcode == Opcode.INVOKE_SUPER }
         check(superStop >= 0) { "Home lifecycle changed" }
         homeStop.addInstructionsWithLabels(superStop + 1, """
@@ -414,7 +420,7 @@ val dcInsidePersonalPatch = bytecodePatch(
             :continue_refresh
             nop
         """.trimIndent())
-        Fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "p", returnType = "V")
+        target.fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "p", returnType = "V")
             .method.addInstructions(0, "return-void")
     }
 }

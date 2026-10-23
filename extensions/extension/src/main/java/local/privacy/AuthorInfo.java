@@ -11,7 +11,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AuthorInfo {
     private static final ConcurrentHashMap<Class<?>, ConcurrentHashMap<String, Method>> GETTERS =
             new ConcurrentHashMap<>();
+    private static String postName = "z", postId = "S", commentId = "h0", headerId = "W1";
     private AuthorInfo() { }
+    public static void configure(boolean modern) {
+        postName = modern ? "y" : "z";
+        postId = modern ? "Q" : "S";
+        commentId = modern ? "g0" : "h0";
+        headerId = modern ? "X1" : "W1";
+    }
 
     private static String value(Object item, String getter) {
         if (item == null) return null;
@@ -41,13 +48,13 @@ public final class AuthorInfo {
     }
 
     public static String listName(Object post) {
-        String name = value(post, "z");
-        return withId(name, SettingsState.get("show_author_id") ? value(post, "S") : null);
+        String name = value(post, postName);
+        return withId(name, SettingsState.get("show_author_id") ? value(post, postId) : null);
     }
 
     public static String commentName(Object comment) {
         String name = value(comment, "Y");
-        return withId(name, SettingsState.get("show_author_id") ? value(comment, "h0") : null);
+        return withId(name, SettingsState.get("show_author_id") ? value(comment, commentId) : null);
     }
 
     public static void applyPostHeader(View header, Object post) {
@@ -62,7 +69,7 @@ public final class AuthorInfo {
         if (!(buttonView instanceof TextView) || !(nameView instanceof TextView)) return;
         TextView button = (TextView) buttonView;
         TextView name = (TextView) nameView;
-        String userId = value(post, "W1");
+        String userId = value(post, headerId);
         String rawIp = value(post, "b");
         name.setTag(nameId, post);
         name.post(() -> {

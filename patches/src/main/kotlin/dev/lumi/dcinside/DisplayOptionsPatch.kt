@@ -22,7 +22,8 @@ val homeDisplayOptionsPatch = bytecodePatch(
     dependsOn(dcInsidePersonalPatch)
 
     execute {
-        val update = Fingerprint(
+        val target = DcTarget(packageMetadata.versionName)
+        val update = target.fingerprint(
             definingClass = "Lcom/dcinside/app/main/adapter/f;",
             name = "Z",
             parameters = listOf("Ljava/util/List;"),
@@ -46,25 +47,26 @@ val hidePageIndicatorsPatch = bytecodePatch(
     dependsOn(dcInsidePersonalPatch)
 
     execute {
-        Fingerprint(
+        val target = DcTarget(packageMetadata.versionName)
+        target.fingerprint(
             definingClass = "Lcom/dcinside/app/post/X2;",
             name = "onBindViewHolder",
             parameters = listOf("Landroidx/recyclerview/widget/RecyclerView\$ViewHolder;", "I"),
             returnType = "V",
-        ).method.hidePageIndicator()
-        Fingerprint(
+        ).method.hidePageIndicator(target.pageLabelId)
+        target.fingerprint(
             definingClass = "Lcom/dcinside/app/post/fragments/u0;",
             name = "h0",
             parameters = listOf("I", "Landroidx/recyclerview/widget/RecyclerView\$ViewHolder;", "I"),
             returnType = "V",
-        ).method.hidePageIndicator()
+        ).method.hidePageIndicator(target.pageLabelId)
     }
 }
 
-private fun MutableMethod.hidePageIndicator() {
+private fun MutableMethod.hidePageIndicator(pageLabelId: Int) {
     val instructions = implementation?.instructions ?: error("Page adapter has no code")
     val resourceIndex = instructions.indexOfFirst {
-        (it as? NarrowLiteralInstruction)?.narrowLiteral == 0x7f150843
+        (it as? NarrowLiteralInstruction)?.narrowLiteral == pageLabelId
     }
     check(resourceIndex >= 0) { "Page separator resource changed" }
     val visibilityIndex = (resourceIndex - 1 downTo 0).firstOrNull { index ->

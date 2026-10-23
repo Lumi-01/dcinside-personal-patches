@@ -2,7 +2,7 @@
 
 Community-maintained Morphe patch bundle for `com.dcinside.app.android`. This repository contains patch code only. It does not contain the DC Inside APK, decompiled vendor code, account data, or signing keys, and is not affiliated with DC Inside or Morphe.
 
-The baseline is Android app version **5.3.6** (`versionCode 100175`). The bundle has been built and applied to that original APK with Morphe Desktop. Android 11 and 15 emulators loaded the home screen and a post; gallery list and comments were also checked on Android 11. Login success and posting have not been verified with this bundle. Version 5.3.6 and newer versions remain experimental: method names, bytecode, resources and native ABI strings may change. The patch deliberately fails when a required fingerprint or binary anchor is missing.
+The verified APK baselines are **5.3.6** (`versionCode 100175`) and **5.3.18** (`versionCode 100187`). Bundle 1.2.0 builds and applies all four patches to both original APKs with Morphe Desktop 1.18.1 / patcher 1.15.1. Each baseline has a separate reviewed class/member/resource mapping; unknown versions are not advertised as supported. Both targets remain experimental. Login success, publishing and all device/Android-version combinations have not been verified with this bundle. On an Android 15 emulator, 5.3.18 loaded the home screen and a post body, opened the native/Morphe settings screens, and applied the search/menu hiding switch without a crash. Earlier 5.3.6 emulator checks are documented in [MAINTAINING.md](MAINTAINING.md).
 
 ## Scope
 
@@ -17,7 +17,7 @@ The baseline is Android app version **5.3.6** (`versionCode 100175`). The bundle
 - Author IDs are shown beside the nickname only when supplied by the app, without an `아이디` label. The post header keeps the masked IP and part of its range description beside the nickname; the button at the right expands that same text to all lines and collapses it again. With the IP switch enabled, visible IPs are matched against the user-provided [흑백 갤러리 offline list](https://gall.dcinside.com/board/view/?id=monochrome&no=46651). `기타등등` is shown as `기타`. These are **unverified network-range estimates** and cannot identify a person, exact carrier or region. No IP lookup is sent to an external service.
 - When enabled, the Naver web analytics setting omits the vendor's `wcslog.js` and `naver_analytics.js` script tags before the post WebView loads. A narrow WebView fallback covers residual requests to those analytics hosts. The separate residual web ad switch covers exact, known ad-only hosts; native ad loader removal remains a fixed part of this patch.
 
-The [Ample DC Inside patch catalog](https://morphe-patches.software/?app=com.dcinside.app.android#apps) currently targets app 5.3.4. Memo presets, DCCon controls and gallery watch are **not** in this 5.3.6 bundle. Morphe Manager's backup/restore/reset screen is already part of Manager itself. See [ATTRIBUTION.md](ATTRIBUTION.md) for the related GPLv3 project.
+The [Ample DC Inside patch catalog](https://morphe-patches.software/?app=com.dcinside.app.android#apps) currently targets app 5.3.4. Memo presets, DCCon controls and gallery watch are **not** in this bundle. Morphe Manager's backup/restore/reset screen is already part of Manager itself. See [ATTRIBUTION.md](ATTRIBUTION.md) for the related GPLv3 project.
 
 This bundle is separate from the manually rebuilt personal APK. See [MAINTAINING.md](MAINTAINING.md) for the feature checklist and gaps that must be verified before calling a newer version supported. Do not combine it with another DC Inside patch source without checking conflicts.
 
@@ -29,11 +29,13 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.1.5) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.0) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 
 ## Limits
+
+Version 1.2.0 ports the WebView, ad/footer/list, home, author-ID and configuration-fallback hooks to 5.3.18. The reported `wv/a.shouldInterceptRequest` failure was caused by renamed vendor code, not the phone model or free memory. The patch checks exact supported versions and retains 5.3.6 mappings; a future update still requires APK review.
 
 Version 1.1.5 reduces extension overhead: disabled author-ID display skips the ID getter, offline IP-list validation reuses compiled patterns, IPv6 group checks avoid regex compilation, and ordinary WebView hosts skip ad/tracking preference reads. These changes preserve the existing options and host list. The bundle was built, but runtime tests and CPU measurements were skipped at the user's request; no quantified CPU or battery improvement is claimed.
 

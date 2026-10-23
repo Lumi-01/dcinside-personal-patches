@@ -12,6 +12,7 @@
 
 ## Patch layout
 
+- `patches/src/main/kotlin/dev/lumi/dcinside/DcTarget.kt`: exact version-specific class/member/field mappings and page-label resource IDs. A reused obfuscated name can mean a different method in another version; never enable arbitrary versions.
 - `patches/src/main/kotlin/dev/lumi/dcinside/DcInsidePatch.kt`: package/version compatibility, binary and XML edits, method fingerprints and bytecode edits.
 - `patches/src/main/kotlin/dev/lumi/dcinside/DisplayOptionsPatch.kt`: optional home-section and page-indicator changes. Each hard-coded item type and method must be rechecked for a new app version.
 - `extensions/extension/src/main/java/local/privacy/HomeFilter.java`: filters home adapter items according to current in-app Morphe choices; on a changed item class it leaves the item visible.
@@ -48,3 +49,13 @@ Generate source metadata with `python scripts/bundle-metadata.py --release v<VER
 For 1.1.5, only extension overhead was reduced: optional list/comment ID getters, IP validation pattern construction and WebView preference reads for unrelated hosts. No vendor lifecycle, refresh interval, content API or layout was changed. Runtime regression tests, original-APK patch application and CPU measurements were intentionally skipped at the user's request. Retest these before treating 1.1.5 as verified; compilation alone establishes neither runtime compatibility nor a measured CPU reduction.
 
 For a manual release, update `version` in `gradle.properties`, build with `buildAndroid generatePatchesList`, upload the resulting `patches-<version>.mpp` to the matching `v<version>` GitHub release, and update `patches-bundle.json` with its URL, version and UTC creation time. Use `yyyy-MM-ddTHH:mm:ss` without a trailing `Z` for `created_at`; Morphe Manager 1.34.0 rejects the `Z` suffix and reports `Metadata N/A`. Check the released asset hash against the locally built bundle, then confirm Morphe Manager can read the repository as a patch source. The optional release workflow is manual-only (`workflow_dispatch`); it must not be used on top of a release already created by hand.
+
+## 1.2.0 / 5.3.18 port
+
+Original 5.3.18: versionCode 100187, min SDK 23, target SDK 36, SHA-256 `4a52133fa826f80a296c0c4a6ffaf21caa6d8106cc8b7814ecb9c068ac54693e`. Official signing certificate SHA-256: `e6b27144a27660b1e00608fa45d319065d97d0a71fb54b8ca1756e8346ec29dd`. Original APKs and decompiled analysis stay outside this repository.
+
+Reviewed mappings include the WebView client/builder, Remote Config class and callback types, ad loader methods, footer binding fields, RecyclerView item field, home list update, page separator ID and author model getters. `AuthorInfo.configure` and `RemoteConfigFallback.configure` select reflective getter names once at process startup. Firebase config-value source changed from `Q()` to `R()`; leaving the old reflection would silently disable cached-config fallback. The Naver script hook additionally validates the actual boolean parameter register. The fetch callback uses its actual move-result register.
+
+The final 1.2.0 bundle built and applied all four patches to both original 5.3.18 and 5.3.6 APKs. Signed output verification passed for 5.3.18. These checks establish patch generation, not complete runtime behavior or Android 17 compatibility. No CPU or battery measurement was performed for this compatibility port.
+
+Android 15 emulator smoke check (2026-10-23): installed the signed 5.3.18 output, loaded the home list and a post body, opened the native settings and the in-app Morphe screen (first option visible), and enabled home search/menu hiding. The home search/menu section disappeared on return. Crash buffer remained empty. This did not cover authenticated login, writing, Android 17, every optional switch, or every possible ad placement.
