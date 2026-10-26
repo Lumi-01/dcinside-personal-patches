@@ -4,13 +4,19 @@ import app.morphe.patcher.Fingerprint
 
 /** Verified names for the supplied official APKs, not a guess for future releases. */
 internal class DcTarget(version: String) {
-    val modern = version in setOf("5.3.18", "5.3.20")
-    init {
-        check(version in setOf("5.3.6", "5.3.18", "5.3.20")) {
-            "DC Inside $version needs an APK compatibility review; supported baselines: 5.3.6, 5.3.18, 5.3.20"
+    // Unknown versions may attempt the reviewed current profile. Bytecode is
+    // checked against its instruction hashes before a matching method is edited.
+    val modern = version != "5.3.6"
+    val unreviewedVersion = version !in setOf("5.3.6", "5.3.18", "5.3.20")
+
+    companion object {
+        private val reviewed by lazy {
+            java.util.Properties().apply {
+                DcTarget::class.java.getResourceAsStream("/dcinside/reviewed-methods.properties")
+                    ?.use { load(it) } ?: error("Reviewed instruction hashes missing")
+            }
         }
     }
-
     private val classes = mapOf(
         "Lcom/dcinside/app/util/Rr;" to "Lcom/dcinside/app/util/Ur;",
         "Lcom/dcinside/app/util/ms;" to "Lcom/dcinside/app/util/ps;",
@@ -69,5 +75,8 @@ internal class DcTarget(version: String) {
                     returnType: String? = null): Fingerprint = Fingerprint(
         definingClass = type(definingClass), name = this.name(definingClass, name),
         parameters = parameters?.map(::type), returnType = returnType?.let(::type),
+        custom = { method, _ ->
+            !modern || reviewed.getProperty(MethodShape.key(method)) == MethodShape.digest(method)
+        },
     )
 }

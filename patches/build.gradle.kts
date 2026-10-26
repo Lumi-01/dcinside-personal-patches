@@ -36,3 +36,6 @@ tasks {
         dependsOn("generatePatchesList")
     }
 }
+
+// Match the patch bundle JVM target when Java helpers are present.
+tasks.withType<JavaCompile>().configureEach { options.release.set(17) }

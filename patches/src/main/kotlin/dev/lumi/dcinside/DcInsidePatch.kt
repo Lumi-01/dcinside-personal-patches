@@ -24,7 +24,8 @@ internal val compatibility = Compatibility(
     targets = listOf(
         AppTarget(version = "5.3.6", isExperimental = true),
         AppTarget(version = "5.3.18", isExperimental = true),
-        AppTarget(version = "5.3.20", isExperimental = true)
+        AppTarget(version = "5.3.20", isExperimental = true),
+        AppTarget(version = null, isExperimental = true)
     )
 )
 
@@ -194,6 +195,14 @@ val dcInsidePersonalPatch = bytecodePatch(
     extendWith("extensions/extension.mpe")
     execute {
         val target = DcTarget(packageMetadata.versionName)
+        if (target.unreviewedVersion) {
+            // Reflective runtime getters must also retain their reviewed meaning.
+            listOf("Lcom/dcinside/app/response/PostItem;" to "Q",
+                "Lcom/dcinside/app/response/m;" to "g0",
+                "Lcom/dcinside/app/model/PostInfo;" to "X1").forEach { (owner, getter) ->
+                target.fingerprint(owner, getter, emptyList(), "Ljava/lang/String;").method
+            }
+        }
         // Initialize the certificate adapter before native app-identity calls.
         val appCreate = target.fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "onCreate", returnType = "V").method
         appCreate.addInstructions(0, "invoke-static {p0}, $CERT->init(Landroid/content/Context;)V")

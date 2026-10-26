@@ -29,13 +29,13 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.2) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.3) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 
 ## Limits
 
-Version 1.2.2 adds the reviewed 5.3.20 target. Its patched app classes match 5.3.18 (startup version strings differ), so it uses the same mapping and retains earlier targets. Unknown versions still require review. No additional optimization or animation change is included.
+Version 1.2.2 adds the reviewed 5.3.20 target. Its patched app classes match 5.3.18 (startup version strings differ), so it uses the same mapping and retains earlier targets. Changed target code still requires review. No additional optimization or animation change is included.
 
 Version 1.2.1 reduces rendering-helper work: list/comment formatting reuses the nickname already read by the app instead of reflecting it again, disabled author features skip header model lookups and posted decoration, header resource IDs are resolved once, and the home filter copies only when it actually hides an item. These are targeted reductions in extension work, not a measured percentage reduction of overall app CPU or battery use. The native refresh cadence, content requests and animations are unchanged.
 
@@ -44,3 +44,5 @@ Version 1.2.0 ports the WebView, ad/footer/list, home, author-ID and configurati
 Version 1.1.5 reduces extension overhead: disabled author-ID display skips the ID getter, offline IP-list validation reuses compiled patterns, IPv6 group checks avoid regex compilation, and ordinary WebView hosts skip ad/tracking preference reads. These changes preserve the existing options and host list. The bundle was built, but runtime tests and CPU measurements were skipped at the user's request; no quantified CPU or battery improvement is claimed.
 
 No claim of battery-life improvement is made without device measurements. The optional refresh limiter may defer new server settings, so leave it off if immediate settings updates matter. Never disable push messaging, user-selected automatic backups, server configuration, login, or media features solely to save battery. The source may need revision after an app update; there is no safe unconditional patch for all future versions.
+
+Version 1.2.3 removes the version-number gate and adds reviewed instruction-hash checks to the current bytecode profile. Existing 5.3.6 keeps its older mapping; other versions attempt the 5.3.20 mapping. This is not unconditional compatibility: changed instructions, references, literals, registers or branches in a target method cause fingerprint failure. Unreviewed versions additionally check the author-ID model getters. No original bytecode is bundled in the hash table. Native/resource anchors remain checked separately. If a new app fails, supply its APK for review rather than disabling validation.
