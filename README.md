@@ -29,7 +29,7 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.3) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.4) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 
@@ -46,3 +46,5 @@ Version 1.1.5 reduces extension overhead: disabled author-ID display skips the I
 No claim of battery-life improvement is made without device measurements. The optional refresh limiter may defer new server settings, so leave it off if immediate settings updates matter. Never disable push messaging, user-selected automatic backups, server configuration, login, or media features solely to save battery. The source may need revision after an app update; there is no safe unconditional patch for all future versions.
 
 Version 1.2.3 removes the version-number gate and adds reviewed instruction-hash checks to the current bytecode profile. Existing 5.3.6 keeps its older mapping; other versions attempt the 5.3.20 mapping. This is not unconditional compatibility: changed instructions, references, literals, registers or branches in a target method cause fingerprint failure. Unreviewed versions additionally check the author-ID model getters. No original bytecode is bundled in the hash table. Native/resource anchors remain checked separately. If a new app fails, supply its APK for review rather than disabling validation.
+
+Version 1.2.4 caches known Morphe options in a volatile bit mask rather than repeatedly calling the synchronized preferences API while rendering. The home filter reads all six options from one snapshot. A retained preference listener handles changes and clear/reset, and settings writes publish before returning. Defaults, persistence and unknown-option fallback are retained. This reduces helper work; no new overall CPU or battery percentage has been measured.
