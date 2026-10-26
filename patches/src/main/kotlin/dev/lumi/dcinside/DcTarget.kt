@@ -2,12 +2,12 @@ package dev.lumi.dcinside
 
 import app.morphe.patcher.Fingerprint
 
-/** Verified names for the two supplied official APKs, not a guess for future releases. */
+/** Verified names for the supplied official APKs, not a guess for future releases. */
 internal class DcTarget(version: String) {
-    val modern = version == "5.3.18"
+    val modern = version in setOf("5.3.18", "5.3.20")
     init {
-        check(version in setOf("5.3.6", "5.3.18")) {
-            "DC Inside $version needs an APK compatibility review; supported baselines: 5.3.6, 5.3.18"
+        check(version in setOf("5.3.6", "5.3.18", "5.3.20")) {
+            "DC Inside $version needs an APK compatibility review; supported baselines: 5.3.6, 5.3.18, 5.3.20"
         }
     }
 

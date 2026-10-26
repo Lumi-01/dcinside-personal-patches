@@ -67,3 +67,9 @@ The author hook now passes the original getter result into the extension. It val
 Run `python scripts/check-render-work.py` with `JAVA_HOME` and `ANDROID_HOME` set. Its host checks use the Android SDK API jar plus a test-only preference fixture: 20,000 disabled-ID formatting calls invoke no model getter; enabled ID labels use both version mappings; home filtering preserves identity when unchanged, order, null/unknown rows and input contents. It does not emulate Android layout or measure CPU. Both original APKs must still pass actual Morphe application.
 
 1.2.1 Android 15 smoke check: signed 5.3.18 APK updated successfully; home and post body loaded; comment screen displayed names, masked IPs and comment content; crash buffer stayed empty. Host checks cover enabled IDs; enabled-ID Android layout and authenticated workflows were not rechecked in this release. No percentage CPU measurement was made.
+
+## 1.2.2 / 5.3.20
+
+Original APK: versionCode 100191, SHA-256 `88cc3662f1002e95fe819025c13908ca7539565ce5e9e91c839cdd25756be7d6`, verified with the same official certificate as 5.3.18. The app classes containing all hooks were compared with 5.3.18; they are identical except IntroFragment startup version strings. The supplied APK's resource table and edited layout entries are unchanged. This is an explicit reviewed target addition, not an unconditional newer-version match.
+
+1.2.2 verification: bundle built; all four patches applied to original 5.3.20 and produced a signed APK. Android 15 emulator update installation succeeded, post body/header loaded, and crash buffer was empty. Login, posting and physical Android 17 were not retested.

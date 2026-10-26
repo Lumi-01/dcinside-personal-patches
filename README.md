@@ -2,7 +2,7 @@
 
 Community-maintained Morphe patch bundle for `com.dcinside.app.android`. This repository contains patch code only. It does not contain the DC Inside APK, decompiled vendor code, account data, or signing keys, and is not affiliated with DC Inside or Morphe.
 
-The verified APK baselines are **5.3.6** (`versionCode 100175`) and **5.3.18** (`versionCode 100187`). Bundle 1.2.0 builds and applies all four patches to both original APKs with Morphe Desktop 1.18.1 / patcher 1.15.1. Each baseline has a separate reviewed class/member/resource mapping; unknown versions are not advertised as supported. Both targets remain experimental. Login success, publishing and all device/Android-version combinations have not been verified with this bundle. On an Android 15 emulator, 5.3.18 loaded the home screen and a post body, opened the native/Morphe settings screens, and applied the search/menu hiding switch without a crash. Earlier 5.3.6 emulator checks are documented in [MAINTAINING.md](MAINTAINING.md).
+The verified APK baselines are **5.3.6** (`versionCode 100175`) and **5.3.18** (`versionCode 100187`) and **5.3.20** (`versionCode 100191`). Bundle 1.2.0 builds and applies all four patches to both original APKs with Morphe Desktop 1.18.1 / patcher 1.15.1. Each baseline has a separate reviewed class/member/resource mapping; unknown versions are not advertised as supported. Both targets remain experimental. Login success, publishing and all device/Android-version combinations have not been verified with this bundle. On an Android 15 emulator, 5.3.18 loaded the home screen and a post body, opened the native/Morphe settings screens, and applied the search/menu hiding switch without a crash. Earlier 5.3.6 emulator checks are documented in [MAINTAINING.md](MAINTAINING.md).
 
 ## Scope
 
@@ -29,11 +29,13 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.1) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.2) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 
 ## Limits
+
+Version 1.2.2 adds the reviewed 5.3.20 target. Its patched app classes match 5.3.18 (startup version strings differ), so it uses the same mapping and retains earlier targets. Unknown versions still require review. No additional optimization or animation change is included.
 
 Version 1.2.1 reduces rendering-helper work: list/comment formatting reuses the nickname already read by the app instead of reflecting it again, disabled author features skip header model lookups and posted decoration, header resource IDs are resolved once, and the home filter copies only when it actually hides an item. These are targeted reductions in extension work, not a measured percentage reduction of overall app CPU or battery use. The native refresh cadence, content requests and animations are unchanged.
 

@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "patches": [
     {
       "name": "DC Inside personal clean-up",
@@ -28,6 +28,13 @@
             },
             {
               "version": "5.3.18",
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.20",
               "versionCodes": null,
               "isExperimental": true,
               "minSdk": null,
@@ -68,6 +75,13 @@
               "isExperimental": true,
               "minSdk": null,
               "description": null
+            },
+            {
+              "version": "5.3.20",
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
             }
           ]
         }
@@ -104,6 +118,13 @@
               "isExperimental": true,
               "minSdk": null,
               "description": null
+            },
+            {
+              "version": "5.3.20",
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
             }
           ]
         }
@@ -136,6 +157,13 @@
             },
             {
               "version": "5.3.18",
+              "versionCodes": null,
+              "isExperimental": true,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.20",
               "versionCodes": null,
               "isExperimental": true,
               "minSdk": null,

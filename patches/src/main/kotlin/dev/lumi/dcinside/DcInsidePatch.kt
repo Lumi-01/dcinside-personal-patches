@@ -23,7 +23,8 @@ internal val compatibility = Compatibility(
     appIconColor = 0x495C9E,
     targets = listOf(
         AppTarget(version = "5.3.6", isExperimental = true),
-        AppTarget(version = "5.3.18", isExperimental = true)
+        AppTarget(version = "5.3.18", isExperimental = true),
+        AppTarget(version = "5.3.20", isExperimental = true)
     )
 )
 
