@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 /** Offline range hints from a community post, never an identity lookup. */
 public final class IpInfo {
     private static volatile Map<String, String> prefixLabels;
+    private static long retryAfter;
 
     /** Compile list-validation patterns once, only when the offline list is read. */
     private static final class ListPatterns {
@@ -79,8 +80,11 @@ public final class IpInfo {
         if (found != null) return found;
         synchronized (IpInfo.class) {
             if (prefixLabels != null) return prefixLabels;
+            if (android.os.SystemClock.elapsedRealtime() < retryAfter) return Collections.emptyMap();
             HashMap<String, LinkedHashSet<String>> entries = new HashMap<>();
             Context context = SettingsState.context();
+            if (context == null) return Collections.emptyMap();
+            boolean loaded = false;
             if (context != null) {
                 int id = context.getResources().getIdentifier("lumi_ip_prefixes", "raw", context.getPackageName());
                 if (id != 0) {
@@ -100,8 +104,13 @@ public final class IpInfo {
                             if (value.isEmpty()) continue;
                             entries.computeIfAbsent(key, unused -> new LinkedHashSet<>()).add(value);
                         }
-                    } catch (Exception ignored) { }
+                        loaded = true;
+                    } catch (Exception ignored) { loaded = false; }
                 }
+            }
+            if (!loaded) {
+                retryAfter = android.os.SystemClock.elapsedRealtime() + 30_000L;
+                return Collections.emptyMap();
             }
             HashMap<String, String> result = new HashMap<>();
             for (Map.Entry<String, LinkedHashSet<String>> entry : entries.entrySet()) {

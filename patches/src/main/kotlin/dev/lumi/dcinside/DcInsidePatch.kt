@@ -442,8 +442,6 @@ val dcInsidePersonalPatch = bytecodePatch(
             invoke-static {p1}, Llocal/privacy/RemoteConfigFallback;->successOrActivated(Z)Z
             move-result p1
         """.trimIndent())
-        target.fingerprint(definingClass = CONFIG, name = "b", parameters = listOf("LW3/o;"), returnType = "V")
-            .method.addInstructions(0, "invoke-static {}, Llocal/privacy/RemoteConfigRefreshGate;->markAttempt()V")
         val homeStop = target.fingerprint(definingClass = "Lcom/dcinside/app/main/E1;", name = "onStop", returnType = "V").method
         val superStop = homeStop.implementation!!.instructions.indexOfFirst { it.opcode == Opcode.INVOKE_SUPER }
         check(superStop >= 0) { "Home lifecycle changed" }

@@ -48,3 +48,7 @@ No claim of battery-life improvement is made without device measurements. The op
 Version 1.2.3 removes the version-number gate and adds reviewed instruction-hash checks to the current bytecode profile. Existing 5.3.6 keeps its older mapping; other versions attempt the 5.3.20 mapping. This is not unconditional compatibility: changed instructions, references, literals, registers or branches in a target method cause fingerprint failure. Unreviewed versions additionally check the author-ID model getters. No original bytecode is bundled in the hash table. Native/resource anchors remain checked separately. If a new app fails, supply its APK for review rather than disabling validation.
 
 Version 1.2.4 caches known Morphe options in a volatile bit mask rather than repeatedly calling the synchronized preferences API while rendering. The home filter reads all six options from one snapshot. A retained preference listener handles changes and clear/reset, and settings writes publish before returning. Defaults, persistence and unknown-option fallback are retained. This reduces helper work; no new overall CPU or battery percentage has been measured.
+
+## 1.2.6 오류 처리 보완
+
+설정 조회 실패 뒤 시도 시각만으로 재시도를 억제하지 않습니다. 최근 조회 시각이 유효하고 활성 설정 캐시가 있는 경우에만 기존 갱신 제한을 적용합니다. 기기 시간이 과거로 바뀐 경우는 갱신을 허용합니다. IP 목록 로딩 실패·부분 읽기는 캐시에 확정하지 않고 다음 조회에서 30초 간격으로 재시도합니다.
