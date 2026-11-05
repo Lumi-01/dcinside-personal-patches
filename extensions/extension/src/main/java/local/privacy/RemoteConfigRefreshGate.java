@@ -7,8 +7,15 @@ public final class RemoteConfigRefreshGate {
     private static final long ONE_HOUR_MS = 3_600_000L;
     private static final long EIGHTEEN_HOURS_MS = 64_800_000L;
     private static volatile long lastAttemptElapsed;
+    private static String preferencesClass;
+    private static String forceGetter;
 
     private RemoteConfigRefreshGate() { }
+
+    public static void configure(String owner, String getter) {
+        preferencesClass = owner;
+        forceGetter = getter;
+    }
 
     public static void markAttempt() {
         lastAttemptElapsed = SystemClock.elapsedRealtime();
@@ -17,9 +24,9 @@ public final class RemoteConfigRefreshGate {
     public static boolean shouldRefreshOnHomeStop() {
         if (!SettingsState.get("reduce_config_refresh")) return true;
         try {
-            Class<?> prefs = Class.forName("com.dcinside.app.util.hr");
+            Class<?> prefs = Class.forName(preferencesClass);
             Object instance = prefs.getField("a").get(null);
-            if ((Boolean) prefs.getMethod("h0").invoke(instance)) return true;
+            if ((Boolean) prefs.getMethod(forceGetter).invoke(instance)) return true;
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             return true;
         }

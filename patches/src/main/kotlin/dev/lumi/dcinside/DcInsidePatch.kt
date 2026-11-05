@@ -22,10 +22,7 @@ internal val compatibility = Compatibility(
     apkFileType = ApkFileType.APK,
     appIconColor = 0x495C9E,
     targets = listOf(
-        AppTarget(version = "5.3.6", isExperimental = true),
-        AppTarget(version = "5.3.18", isExperimental = true),
-        AppTarget(version = "5.3.20", isExperimental = true),
-        AppTarget(version = null, isExperimental = true)
+        AppTarget(version = null)
     )
 )
 
@@ -194,21 +191,49 @@ val dcInsidePersonalPatch = bytecodePatch(
     dependsOn(nativeCertificatePatch)
     extendWith("extensions/extension.mpe")
     execute {
-        val target = DcTarget(packageMetadata.versionName)
-        if (target.unreviewedVersion) {
-            // Reflective runtime getters must also retain their reviewed meaning.
-            listOf("Lcom/dcinside/app/response/PostItem;" to "Q",
-                "Lcom/dcinside/app/response/m;" to "g0",
-                "Lcom/dcinside/app/model/PostInfo;" to "X1").forEach { (owner, getter) ->
-                target.fingerprint(owner, getter, emptyList(), "Ljava/lang/String;").method
-            }
-        }
+        val target = dcTarget()
+        val postIdGetter = classDefBy("Lcom/dcinside/app/response/PostItem;").stringGetters("user_id").sorted().first()
+        val commentIdGetter = classDefBy("Lcom/dcinside/app/response/m;").stringGetters("user_id").sorted().first()
+        val headerIdGetter = classDefBy("Lcom/dcinside/app/model/PostInfo;").stringGetters("user_id").sorted().first()
+        val headerIpGetter = classDefBy("Lcom/dcinside/app/model/PostInfo;").stringGetters("ip").sorted().first()
         // Initialize the certificate adapter before native app-identity calls.
         val appCreate = target.fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "onCreate", returnType = "V").method
         appCreate.addInstructions(0, "invoke-static {p0}, $CERT->init(Landroid/content/Context;)V")
         appCreate.addInstructions(0, "invoke-static {p0}, Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V")
-        val modernFlag = if (target.modern) "0x1" else "0x0"
-        appCreate.addInstructions(0, "const/4 v0, $modernFlag\ninvoke-static {v0}, Llocal/privacy/AuthorInfo;->configure(Z)V\ninvoke-static {v0}, Llocal/privacy/RemoteConfigFallback;->configure(Z)V")
+        val configValueSource = classDefBy("Lcom/google/firebase/remoteconfig/internal/y;").methods.single {
+            it.parameterTypes.isEmpty() && it.returnType == "I" &&
+                it.implementation?.instructions?.toList()?.let { code ->
+                    code.size == 2 && code[0].opcode == Opcode.IGET && code[1].opcode == Opcode.RETURN &&
+                        (code[0] as? ReferenceInstruction)?.reference.toString() ==
+                        "Lcom/google/firebase/remoteconfig/internal/y;->b:I"
+                } == true
+        }.name
+        val forceConfig = Fingerprint(parameters = emptyList(), returnType = "Z",
+            strings = listOf("forceRemoteConfig"), custom = { method, _ ->
+                method.definingClass.startsWith("Lcom/dcinside/app/util/") &&
+                    method.implementation?.instructions?.any {
+                        (it as? ReferenceInstruction)?.reference.toString() ==
+                            "Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z"
+                    } == true
+            }).method
+        val forceOwner = forceConfig.definingClass
+        check(classDefBy(forceOwner).fields.any {
+            it.name == "a" && it.type == forceOwner && it.accessFlags and 0x9 == 0x9
+        }) { "Remote config preferences singleton changed" }
+        val forceClass = forceOwner.removePrefix("L").removeSuffix(";").replace('/', '.')
+        check(appCreate.implementation!!.registerCount >= 5) { "Application initialization registers changed" }
+        appCreate.addInstructions(0, """
+            const-string v0, "$postIdGetter"
+            const-string v1, "$commentIdGetter"
+            const-string v2, "$headerIdGetter"
+            const-string v3, "$headerIpGetter"
+            invoke-static {v0, v1, v2, v3}, Llocal/privacy/AuthorInfo;->configure(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+            const-string v0, "$configValueSource"
+            invoke-static {v0}, Llocal/privacy/RemoteConfigFallback;->configure(Ljava/lang/String;)V
+            const-string v0, "$forceClass"
+            const-string v1, "${forceConfig.name}"
+            invoke-static {v0, v1}, Llocal/privacy/RemoteConfigRefreshGate;->configure(Ljava/lang/String;Ljava/lang/String;)V
+        """.trimIndent())
         val settingsView = target.fingerprint(definingClass = "Lcom/dcinside/app/settings/K1;", name = "onViewCreated",
             parameters = listOf("Landroid/view/View;", "Landroid/os/Bundle;"), returnType = "V").method
         val settingsSuper = settingsView.implementation!!.instructions.indexOfFirst { instruction ->

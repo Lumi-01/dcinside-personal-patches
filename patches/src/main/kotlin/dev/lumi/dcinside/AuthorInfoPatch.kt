@@ -21,7 +21,7 @@ val authorInfoPatch = bytecodePatch(
     dependsOn(dcInsidePersonalPatch)
 
     execute {
-        val target = DcTarget(packageMetadata.versionName)
+        val target = dcTarget()
         val header = target.fingerprint(
             definingClass = "Lcom/dcinside/app/view/PostReadHeaderView;",
             name = "Y",
@@ -52,25 +52,25 @@ val authorInfoPatch = bytecodePatch(
             "Lcom/dcinside/app/post/fragments/u0;" to "i0",
         ).forEach { (owner, name) ->
             target.fingerprint(definingClass = owner, name = name, returnType = "V")
-                .method.decorateGetter("Lcom/dcinside/app/response/PostItem;", target.name("Lcom/dcinside/app/response/PostItem;", "z"), "listName")
+                .method.decorateGetter("Lcom/dcinside/app/response/PostItem;", classDefBy("Lcom/dcinside/app/response/PostItem;").stringGetters("name"), "listName")
         }
         target.fingerprint(
             definingClass = "Lcom/dcinside/app/read/V\$b;", name = "d",
             parameters = listOf("Landroid/content/Context;", "Lcom/dcinside/app/response/m;"),
             returnType = "Ljava/lang/CharSequence;",
-        ).method.decorateGetter("Lcom/dcinside/app/response/m;", "Y", "commentName")
+        ).method.decorateGetter("Lcom/dcinside/app/response/m;", classDefBy("Lcom/dcinside/app/response/m;").stringGetters("name"), "commentName")
     }
 }
 
-private fun MutableMethod.decorateGetter(owner: String, getter: String, formatter: String) {
+private fun MutableMethod.decorateGetter(owner: String, getters: Set<String>, formatter: String) {
     val instructions = implementation?.instructions ?: error("$name has no bytecode")
     val calls = instructions.indices.filter { index ->
         val reference = (instructions[index] as? ReferenceInstruction)?.reference as? MethodReference
-        reference?.definingClass == owner && reference.name == getter &&
+        reference?.definingClass == owner && reference.name in getters &&
             reference.parameterTypes.isEmpty() && index + 1 < instructions.size &&
             instructions[index + 1].opcode == Opcode.MOVE_RESULT_OBJECT
     }
-    check(calls.isNotEmpty()) { "$owner->$getter rendering anchor changed in $name" }
+    check(calls.isNotEmpty()) { "$owner author-name rendering anchor changed in $name" }
     calls.asReversed().forEach { index ->
         val receiver = (instructions[index] as? FiveRegisterInstruction)?.registerC
             ?: error("Unexpected getter invoke format")

@@ -1,19 +1,58 @@
 package dev.lumi.dcinside
 
 import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.patch.BytecodePatchContext
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.value.StringEncodedValue
+
+internal fun BytecodePatchContext.dcTarget(): DcTarget {
+    fun hasConfig(type: String) = classDefByOrNull(type)?.methods?.any {
+        it.name == "C0" && it.parameterTypes.isEmpty() && it.returnType == "Z"
+    } == true
+    return when {
+        hasConfig("Lcom/dcinside/app/util/cs;") -> DcTarget(true, true)
+        hasConfig("Lcom/dcinside/app/util/Ur;") -> DcTarget(true, false)
+        hasConfig("Lcom/dcinside/app/util/Rr;") -> DcTarget(false, false)
+        else -> error("DC 광고 설정 코드 구조를 찾지 못했습니다. 앱 코드에 맞는 패치 갱신이 필요합니다.")
+    }
+}
+
+/** Resolve response fields by their serialized meaning, including renamed getter methods. */
+internal fun ClassDef.stringGetters(jsonName: String): Set<String> {
+    val matchingFields = fields.filter { field -> field.type == "Ljava/lang/String;" && field.annotations.any { annotation ->
+        annotation.type.startsWith("Lcom/google/gson/annotations/") && annotation.elements.any {
+            it.name == "value" && (it.value as? StringEncodedValue)?.value == jsonName
+        }
+    } }.map { "$type->${it.name}:${it.type}" }.toSet()
+    val getters = methods.filter { method ->
+        method.parameterTypes.isEmpty() && method.returnType == "Ljava/lang/String;" &&
+            method.implementation?.instructions?.toList()?.let { instructions ->
+                instructions.size == 2 && instructions[0].opcode == com.android.tools.smali.dexlib2.Opcode.IGET_OBJECT &&
+                    instructions[1].opcode == com.android.tools.smali.dexlib2.Opcode.RETURN_OBJECT &&
+                    (instructions[0] as? ReferenceInstruction)?.reference.toString() in matchingFields
+            } == true
+    }.map { it.name }.toSet()
+    check(getters.isNotEmpty()) { "작성자 정보 필드 구조가 변경됐습니다: $type / $jsonName" }
+    return getters
+}
 
 /** Verified names for the supplied official APKs, not a guess for future releases. */
-internal class DcTarget(version: String) {
+internal class DcTarget(val modern: Boolean, val latest: Boolean) {
     // Unknown versions may attempt the reviewed current profile. Bytecode is
     // checked against its instruction hashes before a matching method is edited.
-    val modern = version != "5.3.6"
-    val unreviewedVersion = version !in setOf("5.3.6", "5.3.18", "5.3.20")
 
     companion object {
         private val reviewed by lazy {
             java.util.Properties().apply {
                 DcTarget::class.java.getResourceAsStream("/dcinside/reviewed-methods.properties")
                     ?.use { load(it) } ?: error("Reviewed instruction hashes missing")
+            }
+        }
+        private val reviewedLatest by lazy {
+            java.util.Properties().apply {
+                DcTarget::class.java.getResourceAsStream("/dcinside/reviewed-methods-521.properties")
+                    ?.use { load(it) } ?: error("Current reviewed instruction hashes missing")
             }
         }
     }
@@ -59,24 +98,62 @@ internal class DcTarget(version: String) {
             "Landroidx/recyclerview/widget/RecyclerView\$ViewHolder;->a:Landroid/view/View;",
     )
 
-    fun type(type: String): String = if (modern) classes[type] ?: type else type
-    fun name(owner: String, name: String): String = if (modern)
-        methods[owner.removePrefix("L").removeSuffix(";") + ":" + name] ?: name else name
+    private val latestClasses = mapOf(
+        "Lcom/dcinside/app/util/Ur;" to "Lcom/dcinside/app/util/cs;",
+        "Lcom/dcinside/app/util/ps;" to "Lcom/dcinside/app/util/xs;",
+        "Lcom/dcinside/app/settings/K1;" to "Lcom/dcinside/app/settings/U1;",
+        "Lcom/dcinside/app/ad/support/E;" to "Lcom/dcinside/app/ad/support/F;",
+        "LN3/o;" to "LF4/o;", "LK/L7;" to "LK/O7;",
+    )
+    private val latestNames = mapOf(
+        "com/dcinside/app/main/adapter/f:G0" to "Y",
+        "com/dcinside/app/post/X2:Y" to "onBindViewHolder",
+        "com/dcinside/app/post/X2:H0" to "Z",
+        "com/dcinside/app/post/X2:Z0" to "s0",
+        "com/dcinside/app/post/fragments/u0:O0" to "g0",
+        "com/dcinside/app/post/fragments/u0:P0" to "h0",
+        "com/dcinside/app/post/fragments/E2:c0" to "l",
+        "com/dcinside/app/post/fragments/z3:F2" to "P2",
+        "com/dcinside/app/post/fragments/z3:y2" to "K2",
+        "com/dcinside/app/post/fragments/z3:q0" to "I0",
+        "com/dcinside/app/post/fragments/w2:d5" to "n5",
+        "com/dcinside/app/view/f0:q0" to "I0",
+        "com/dcinside/app/view/f0:l1" to "K0",
+        "com/dcinside/app/view/f0:o1" to "N0",
+        "com/dcinside/app/ad/naver/c:c0" to "k",
+        "com/dcinside/app/ad/naver/e:a0" to "i",
+        "com/dcinside/app/main/A0:K2" to "U2",
+    )
+    fun type(type: String): String {
+        val mapped = if (modern) classes[type] ?: type else type
+        return if (latest) latestClasses[mapped] ?: mapped else mapped
+    }
+    fun name(owner: String, name: String): String {
+        val key = owner.removePrefix("L").removeSuffix(";")
+        val mapped = if (modern) methods["$key:$name"] ?: name else name
+        return if (latest) latestNames["$key:$mapped"] ?: mapped else mapped
+    }
     fun smali(code: String): String {
         if (!modern) return code
         var updated = code
         fields.forEach { (old, new) -> updated = updated.replace(old, new) }
         classes.forEach { (old, new) -> updated = updated.replace(old, new) }
+        if (latest) {
+            updated = updated.replace("Lcom/dcinside/app/view/f0;->D9:LK/L7;", "Lcom/dcinside/app/view/f0;->W:LK/L7;")
+                .replace("Lcom/dcinside/app/post/fragments/E2;->F9:", "Lcom/dcinside/app/post/fragments/E2;->a0:")
+                .replace("Lcom/dcinside/app/post/fragments/E2;->G9:", "Lcom/dcinside/app/post/fragments/E2;->b0:")
+            latestClasses.forEach { (old, new) -> updated = updated.replace(old, new) }
+        }
         return updated
     }
-    val pageLabelId get() = if (modern) 0x7f15082f else 0x7f150843
+    val pageLabelId get() = if (latest) 0x7f150942 else if (modern) 0x7f15082f else 0x7f150843
 
     fun fingerprint(definingClass: String, name: String, parameters: List<String>? = null,
                     returnType: String? = null): Fingerprint = Fingerprint(
         definingClass = type(definingClass), name = this.name(definingClass, name),
         parameters = parameters?.map(::type), returnType = returnType?.let(::type),
         custom = { method, _ ->
-            !modern || reviewed.getProperty(MethodShape.key(method)) == MethodShape.digest(method)
+            !modern || (if (latest) reviewedLatest else reviewed).getProperty(MethodShape.key(method)) == MethodShape.digest(method)
         },
     )
 }

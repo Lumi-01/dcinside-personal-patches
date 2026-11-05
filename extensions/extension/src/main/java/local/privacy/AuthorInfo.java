@@ -13,11 +13,13 @@ public final class AuthorInfo {
             new ConcurrentHashMap<>();
     private static volatile int cachedButtonId, cachedNameId;
     private static String postId = "S", commentId = "h0", headerId = "W1";
+    private static String headerIp = "b";
     private AuthorInfo() { }
-    public static void configure(boolean modern) {
-        postId = modern ? "Q" : "S";
-        commentId = modern ? "g0" : "h0";
-        headerId = modern ? "X1" : "W1";
+    public static void configure(String post, String comment, String header, String ip) {
+        postId = post;
+        commentId = comment;
+        headerId = header;
+        headerIp = ip;
     }
 
     private static String value(Object item, String getter) {
@@ -84,7 +86,7 @@ public final class AuthorInfo {
             return;
         }
         String userId = showId ? value(post, headerId) : null;
-        String rawIp = value(post, "b");
+        String rawIp = value(post, headerIp);
         name.post(() -> {
             if (name.getTag(tagId) != post) return;
             decoratePostName(name, userId, rawIp);

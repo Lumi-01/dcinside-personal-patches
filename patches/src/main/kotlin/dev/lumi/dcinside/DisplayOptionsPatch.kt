@@ -22,7 +22,7 @@ val homeDisplayOptionsPatch = bytecodePatch(
     dependsOn(dcInsidePersonalPatch)
 
     execute {
-        val target = DcTarget(packageMetadata.versionName)
+        val target = dcTarget()
         val update = target.fingerprint(
             definingClass = "Lcom/dcinside/app/main/adapter/f;",
             name = "Z",
@@ -47,7 +47,7 @@ val hidePageIndicatorsPatch = bytecodePatch(
     dependsOn(dcInsidePersonalPatch)
 
     execute {
-        val target = DcTarget(packageMetadata.versionName)
+        val target = dcTarget()
         target.fingerprint(
             definingClass = "Lcom/dcinside/app/post/X2;",
             name = "onBindViewHolder",

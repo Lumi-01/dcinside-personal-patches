@@ -7,8 +7,8 @@ import java.util.Map;
 public final class RemoteConfigFallback {
     private static String sourceGetter = "Q";
     private RemoteConfigFallback() { }
-    public static void configure(boolean modern) {
-        sourceGetter = modern ? "R" : "Q";
+    public static void configure(String getter) {
+        sourceGetter = getter;
     }
 
     public static boolean successOrActivated(boolean fetchSucceeded) {

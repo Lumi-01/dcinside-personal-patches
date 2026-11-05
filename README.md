@@ -2,7 +2,7 @@
 
 Community-maintained Morphe patch bundle for `com.dcinside.app.android`. This repository contains patch code only. It does not contain the DC Inside APK, decompiled vendor code, account data, or signing keys, and is not affiliated with DC Inside or Morphe.
 
-The verified APK baselines are **5.3.6** (`versionCode 100175`) and **5.3.18** (`versionCode 100187`) and **5.3.20** (`versionCode 100191`). Bundle 1.2.0 builds and applies all four patches to both original APKs with Morphe Desktop 1.18.1 / patcher 1.15.1. Each baseline has a separate reviewed class/member/resource mapping; unknown versions are not advertised as supported. Both targets remain experimental. Login success, publishing and all device/Android-version combinations have not been verified with this bundle. On an Android 15 emulator, 5.3.18 loaded the home screen and a post body, opened the native/Morphe settings screens, and applied the search/menu hiding switch without a crash. Earlier 5.3.6 emulator checks are documented in [MAINTAINING.md](MAINTAINING.md).
+Bundle **1.2.5** adds the supplied **5.3.21** APK (`versionCode 100194`) and removes version-number filtering from all four patches. Code structure selects the reviewed legacy, 5.3.18/5.3.20 or 5.3.21 mapping. Instruction hashes still check the modern patch sites. Future code changes can require an updated mapping. Author IDs, IPs and displayed names are resolved from serialized field annotations and their getters, covering renamed response members. Remote-config cache and forced-refresh preference getters are resolved from the supplied APK rather than fixed obfuscated names. Build and all four patch applications, rebuild and signing pass on 5.3.21, 5.3.20 and 5.3.6. A manifest-only version change to 99.0.0 also passes without force mode; this checks the number filter, not future code compatibility. Runtime login, publishing and phone behavior have not been verified for this release. Earlier emulator checks are recorded in [MAINTAINING.md](MAINTAINING.md).
 
 ## Scope
 
@@ -29,7 +29,7 @@ Morphe's official Gradle template requires GitHub Packages authentication with `
 ./gradlew buildAndroid generatePatchesList
 ```
 
-The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) and enable pre-release patches for this experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.4) is also available for a manual Morphe Desktop patch. Review the experimental status before installing the output APK.
+The `.mpp` file is written to `patches/build/libs/`. In Morphe Manager, add `https://github.com/Lumi-01/dcinside-personal-patches` as a [patch source](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md). Both main and dev distribute the same experimental bundle. The matching [bundle release](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.5) is also available for a manual Morphe Desktop patch.
 
 Morphe signs the patched APK with its own key. Keep Morphe's signing key and app data if you want later Morphe-patched updates to install over it. This public repository does not distribute a patched APK.
 
