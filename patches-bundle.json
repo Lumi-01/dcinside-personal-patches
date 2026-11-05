@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-11-05T03:34:38",
+  "created_at": "2026-11-05T03:59:28",
   "description": "Experimental DC Inside: cached runtime preference snapshot; version-number gate removed with instruction guards; no quantified new CPU claim",
-  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.2.5/patches-1.2.5.mpp",
+  "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.2.6/patches-1.2.6.mpp",
   "signature_download_url": "",
-  "version": "1.2.5"
+  "version": "1.2.6"
 }
