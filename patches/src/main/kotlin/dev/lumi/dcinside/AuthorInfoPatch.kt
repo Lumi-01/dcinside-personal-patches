@@ -21,6 +21,9 @@ val authorInfoPatch = bytecodePatch(
     dependsOn(dcInsidePersonalPatch)
 
     execute {
+        if (classDefByOrNull("Ljl9;") != null) {
+            applyRepackagedAuthorInfo()
+        } else {
         val appCreate = Fingerprint(
             definingClass = "Lcom/dcinside/app/Application;",
             name = "onCreate",
@@ -68,6 +71,91 @@ val authorInfoPatch = bytecodePatch(
             parameters = listOf("Landroid/content/Context;", "Lcom/dcinside/app/response/m;"),
             returnType = "Ljava/lang/CharSequence;",
         ).method.decorateGetter("Lcom/dcinside/app/response/m;", classDefBy("Lcom/dcinside/app/response/m;").stringGetters("name"), "commentName")
+        }
+    }
+}
+
+/** Reviewed author renderers in the 5.3.27 repackaged app profile. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedAuthorInfo() {
+    val appCreate = Fingerprint(
+        definingClass = "Lcom/dcinside/app/Application;",
+        name = "onCreate",
+        returnType = "V",
+    ).method
+    appCreate.addInstructions(0, """
+        const/4 v0, 0x4
+        invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
+    """.trimIndent())
+
+    val postIdGetter = classDefBy("Lcom/dcinside/app/response/PostItem;").stringGetters("user_id").sorted().first()
+    val commentClass = classDefBy("Ljl9;")
+    val commentIdGetter = commentClass.stringGetters("user_id").sorted().first()
+    val commentIpGetter = commentClass.stringGetters("ipData").sorted().first()
+    val headerClass = classDefBy("Lcom/dcinside/app/model/PostInfo;")
+    val headerIdGetter = headerClass.stringGetters("user_id").sorted().first()
+    val headerIpGetter = headerClass.stringGetters("ip").sorted().first()
+    appCreate.addInstructions(0, """
+        const-string v0, "$postIdGetter"
+        const-string v1, "$commentIdGetter"
+        const-string v2, "$headerIdGetter"
+        const-string v3, "$headerIpGetter"
+        const-string v4, "$commentIpGetter"
+        invoke-static/range {v0 .. v4}, Llocal/privacy/AuthorInfo;->configure(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+    """.trimIndent())
+
+    val postHeader = Fingerprint(
+        definingClass = "Lcom/dcinside/app/view/PostReadHeaderView;",
+        name = "c",
+        parameters = listOf("Lcom/dcinside/app/model/PostInfo;", "Z", "Ljava/lang/String;"),
+        returnType = "V",
+    ).method
+    postHeader.addInstructions(0,
+        "invoke-static/range {p0 .. p1}, Llocal/privacy/AuthorInfo;->applyPostHeader(Landroid/view/View;Ljava/lang/Object;)V")
+
+    val commentRenderer = Fingerprint(
+        definingClass = "Lt12;",
+        name = "i",
+        parameters = listOf("Ljl9;", "Ljava/lang/String;", "Ljava/lang/String;", "Landroid/content/Context;"),
+        returnType = "Landroid/text/SpannableStringBuilder;",
+    ).method
+    val commentInstructions = commentRenderer.implementation?.instructions
+        ?: error("Comment author renderer has no body")
+    val commentReturns = commentInstructions.indices.filter { commentInstructions[it].opcode == Opcode.RETURN_OBJECT }
+    check(commentReturns.isNotEmpty()) { "Comment author renderer return changed" }
+    commentReturns.asReversed().forEach { index ->
+        val result = (commentInstructions[index] as? OneRegisterInstruction)?.registerA
+            ?: error("Unexpected comment renderer return format")
+        check(result <= 15) { "Comment renderer result register changed" }
+        commentRenderer.addInstructions(index, """
+            invoke-static {p0, v$result}, Llocal/privacy/AuthorInfo;->decorateCommentName(Ljava/lang/Object;Landroid/text/SpannableStringBuilder;)Landroid/text/SpannableStringBuilder;
+            move-result-object v$result
+        """.trimIndent())
+    }
+
+    val postNames = classDefBy("Lcom/dcinside/app/response/PostItem;").stringGetters("name")
+    Fingerprint(
+        definingClass = "Lc38;",
+        name = "onBindViewHolder",
+        parameters = listOf("Landroidx/recyclerview/widget/y;", "I"),
+        returnType = "V",
+    ).method.decorateGetter("Lcom/dcinside/app/response/PostItem;", postNames, "listName")
+
+    val bodyHtml = Fingerprint(
+        definingClass = "Lv22;",
+        name = "b",
+        parameters = emptyList(),
+        returnType = "Ljava/lang/String;",
+    ).method
+    val htmlInstructions = bodyHtml.implementation?.instructions ?: error("Post HTML getter has no body")
+    val htmlReturns = htmlInstructions.indices.filter { htmlInstructions[it].opcode == Opcode.RETURN_OBJECT }
+    check(htmlReturns.isNotEmpty()) { "Post HTML getter return changed" }
+    htmlReturns.asReversed().forEach { index ->
+        val result = (htmlInstructions[index] as? OneRegisterInstruction)?.registerA
+            ?: error("Unexpected post HTML return format")
+        bodyHtml.addInstructions(index, """
+            invoke-static {v$result}, Llocal/privacy/AutoImageFilter;->filter(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object v$result
+        """.trimIndent())
     }
 }
 

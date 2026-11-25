@@ -16,7 +16,8 @@ public final class HomeFilter {
         ArrayList<Object> result = null;
         int index = 0;
         for (Object item : items) {
-            if (hidden(itemType(item), mask)) {
+            int type = itemType(item);
+            if (hidden(type, mask)) {
                 if (result == null) {
                     result = new ArrayList<>(items.size());
                     result.addAll(items.subList(0, index));
@@ -27,6 +28,31 @@ public final class HomeFilter {
             index++;
         }
         return result == null ? items : result;
+    }
+
+    /** Removes only verified ad rows from the repackaged 5.3.27 home adapter. */
+    public static List<?> filterAds(List<?> items) {
+        if (!SettingsState.get("block_app_ad_loaders") || items == null || items.isEmpty()) return items;
+        ArrayList<Object> result = null;
+        int index = 0;
+        for (Object item : items) {
+            if (adOnly(itemType(item))) {
+                if (result == null) {
+                    result = new ArrayList<>(items.size());
+                    result.addAll(items.subList(0, index));
+                }
+            } else if (result != null) {
+                result.add(item);
+            }
+            index++;
+        }
+        return result == null ? items : result;
+    }
+
+    private static boolean adOnly(int type) {
+        // 4 and 5 are the native ad holders. 41 and 45 are real dividers and
+        // remain in the list so normal section spacing is preserved.
+        return type == 4 || type == 5;
     }
 
     private static int itemType(Object item) {

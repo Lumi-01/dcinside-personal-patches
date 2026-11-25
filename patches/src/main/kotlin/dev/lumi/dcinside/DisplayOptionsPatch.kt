@@ -31,13 +31,22 @@ val homeDisplayOptionsPatch = bytecodePatch(
             const/4 v0, 0x1
             invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
         """.trimIndent())
-        val target = dcTarget()
-        val update = target.fingerprint(
-            definingClass = "Lcom/dcinside/app/main/adapter/f;",
-            name = "Z",
-            parameters = listOf("Ljava/util/List;"),
-            returnType = "V",
-        ).method
+        val update = if (classDefByOrNull("La66;") != null) {
+            Fingerprint(
+                definingClass = "La66;",
+                name = "n",
+                parameters = listOf("Ljava/util/List;"),
+                returnType = "V",
+            ).method
+        } else {
+            val target = dcTarget()
+            target.fingerprint(
+                definingClass = "Lcom/dcinside/app/main/adapter/f;",
+                name = "Z",
+                parameters = listOf("Ljava/util/List;"),
+                returnType = "V",
+            ).method
+        }
         update.addInstructions(0, """
             invoke-static {p1}, Llocal/privacy/HomeFilter;->filter(Ljava/util/List;)Ljava/util/List;
             move-result-object p1
@@ -65,19 +74,40 @@ val hidePageIndicatorsPatch = bytecodePatch(
             const/4 v0, 0x2
             invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
         """.trimIndent())
-        val target = dcTarget()
-        target.fingerprint(
-            definingClass = "Lcom/dcinside/app/post/X2;",
-            name = "onBindViewHolder",
-            parameters = listOf("Landroidx/recyclerview/widget/RecyclerView\$ViewHolder;", "I"),
-            returnType = "V",
-        ).method.hidePageIndicator(target.pageLabelId)
-        target.fingerprint(
-            definingClass = "Lcom/dcinside/app/post/fragments/u0;",
-            name = "h0",
-            parameters = listOf("I", "Landroidx/recyclerview/widget/RecyclerView\$ViewHolder;", "I"),
-            returnType = "V",
-        ).method.hidePageIndicator(target.pageLabelId)
+        if (classDefByOrNull("Lq58;") != null) {
+            val bindPageRow = Fingerprint(
+                definingClass = "Lq58;",
+                name = "h",
+                parameters = listOf("Ldw5;", "Ljava/lang/String;", "I", "Z", "Lqc;"),
+                returnType = "V",
+            ).method
+            bindPageRow.applyPageIndicator()
+        } else {
+            val target = dcTarget()
+            target.fingerprint(
+                definingClass = "Lcom/dcinside/app/post/X2;",
+                name = "onBindViewHolder",
+                parameters = listOf("Landroidx/recyclerview/widget/RecyclerView\$ViewHolder;", "I"),
+                returnType = "V",
+            ).method.hidePageIndicator(target.pageLabelId)
+            target.fingerprint(
+                definingClass = "Lcom/dcinside/app/post/fragments/u0;",
+                name = "h0",
+                parameters = listOf("I", "Landroidx/recyclerview/widget/RecyclerView\$ViewHolder;", "I"),
+                returnType = "V",
+            ).method.hidePageIndicator(target.pageLabelId)
+        }
+    }
+}
+
+private fun MutableMethod.applyPageIndicator() {
+    val instructions = implementation?.instructions ?: error("Page row binder has no code")
+    val returns = instructions.indices.filter { instructions[it].opcode == Opcode.RETURN_VOID }
+    check(returns.isNotEmpty()) { "Page row binder return path changed" }
+    returns.asReversed().forEach { index ->
+        addInstructions(index, """
+            invoke-static {p0}, Llocal/privacy/PageIndicator;->applyToPageItem(Ljava/lang/Object;)V
+        """.trimIndent())
     }
 }
 

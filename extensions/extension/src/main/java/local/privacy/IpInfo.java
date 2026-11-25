@@ -41,6 +41,11 @@ public final class IpInfo {
         return "IP: " + visible + (estimate == null ? "" : " · " + estimate);
     }
 
+    /** Offline prefix estimate used next to author names in the app's native UI. */
+    public static String estimateForIp(String ip) {
+        return prefixEstimate(ip);
+    }
+
     private static String prefixEstimate(String ip) {
         if (ip == null) return null;
         String visible = ip.trim().toLowerCase(Locale.ROOT);

@@ -20,8 +20,19 @@ internal fun BytecodePatchContext.dcTarget(): DcTarget {
 
 /** Resolve response fields by their serialized meaning, including renamed getter methods. */
 internal fun ClassDef.stringGetters(jsonName: String): Set<String> {
+    val getters = stringGetterCandidates(jsonName)
+    check(getters.isNotEmpty()) { "작성자 정보 필드 구조가 변경됐습니다: $type / $jsonName" }
+    return getters
+}
+
+internal fun ClassDef.stringGettersOrNull(jsonName: String): Set<String>? =
+    stringGetterCandidates(jsonName).ifEmpty { null }
+
+private fun ClassDef.stringGetterCandidates(jsonName: String): Set<String> {
     val matchingFields = fields.filter { field -> field.type == "Ljava/lang/String;" && field.annotations.any { annotation ->
-        annotation.type.startsWith("Lcom/google/gson/annotations/") && annotation.elements.any {
+        // The app's 5.3.27 R8 build renames Gson's SerializedName annotation
+        // class to a package-private name. Its serialized `value` stays intact.
+        annotation.elements.any {
             it.name == "value" && (it.value as? StringEncodedValue)?.value == jsonName
         }
     } }.map { "$type->${it.name}:${it.type}" }.toSet()
@@ -33,7 +44,6 @@ internal fun ClassDef.stringGetters(jsonName: String): Set<String> {
                     (instructions[0] as? ReferenceInstruction)?.reference.toString() in matchingFields
             } == true
     }.map { it.name }.toSet()
-    check(getters.isNotEmpty()) { "작성자 정보 필드 구조가 변경됐습니다: $type / $jsonName" }
     return getters
 }
 

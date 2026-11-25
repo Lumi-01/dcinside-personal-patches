@@ -9,6 +9,7 @@ import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -35,6 +36,7 @@ internal val legacyFeatureCompatibility = Compatibility(
         AppTarget(version = "5.3.6"),
         AppTarget(version = "5.3.18"),
         AppTarget(version = "5.3.21"),
+        AppTarget(version = "5.3.27"),
     ),
 )
 
@@ -629,6 +631,60 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         nop
     """.trimIndent())
 
+    // The empty remote slot still creates native placeholder rows in 5.3.27.
+    // Remove only those verified home-ad rows when the in-app switch is on.
+    Fingerprint(
+        definingClass = "La66;",
+        name = "n",
+        parameters = listOf("Ljava/util/List;"),
+        returnType = "V",
+    ).method.addInstructions(0, """
+        invoke-static {p1}, Llocal/privacy/HomeFilter;->filterAds(Ljava/util/List;)Ljava/util/List;
+        move-result-object p1
+    """.trimIndent())
+
+    // These native containers reserve layout height after their ad list is empty.
+    Fingerprint(
+        definingClass = "Lx98;",
+        name = "A",
+        parameters = listOf("Ldw5;", "Ls22;"),
+        returnType = "V",
+    ).method.collapseBeforeReturn("""
+        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseReadFooterAds(Landroid/view/View;)V
+    """.trimIndent())
+    Fingerprint(
+        definingClass = "Lx98;",
+        name = "B",
+        parameters = listOf("Ldw5;", "Ls22;"),
+        returnType = "V",
+    ).method.collapseBeforeReturn("""
+        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseReadFooterAds(Landroid/view/View;)V
+    """.trimIndent())
+    Fingerprint(
+        definingClass = "Lg78;",
+        name = "f0",
+        parameters = emptyList(),
+        returnType = "V",
+    ).method.collapseBeforeReturn("""
+        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseGalleryAds(Ljava/lang/Object;)V
+    """.trimIndent())
+    Fingerprint(
+        definingClass = "Lg78;",
+        name = "g0",
+        parameters = listOf("Ljava/lang/String;"),
+        returnType = "V",
+    ).method.collapseBeforeReturn("""
+        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseGalleryAds(Ljava/lang/Object;)V
+    """.trimIndent())
+    Fingerprint(
+        definingClass = "Lq58;",
+        name = "h",
+        parameters = listOf("Ldw5;", "Ljava/lang/String;", "I", "Z", "Lqc;"),
+        returnType = "V",
+    ).method.collapseBeforeReturn("""
+        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapsePageAd(Ljava/lang/Object;)V
+    """.trimIndent())
+
     val intercept = Fingerprint(
         definingClass = "Lc22;",
         name = "shouldInterceptRequest",
@@ -659,4 +715,11 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         invoke-static/range {p10 .. p10}, Llocal/privacy/WebResourceBlocker;->allowNaverAnalytics(Z)Z
         move-result p10
     """.trimIndent())
+}
+
+private fun MutableMethod.collapseBeforeReturn(code: String) {
+    val instructions = implementation?.instructions ?: error("Ad container callback has no code")
+    val returns = instructions.indices.filter { instructions[it].opcode == Opcode.RETURN_VOID }
+    check(returns.isNotEmpty()) { "Ad container callback return path changed: $name" }
+    returns.asReversed().forEach { index -> addInstructions(index, code) }
 }
