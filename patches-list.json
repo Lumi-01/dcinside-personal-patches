@@ -42,6 +42,49 @@
       "compatiblePackages": [
         {
           "packageName": "com.dcinside.app.android",
+          "name": "DC Inside reviewed optional features",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#495C9E",
+          "signatures": null,
+          "targets": [
+            {
+              "version": "5.3.6",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.18",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.21",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "디시 앱 업데이트 안내 설정",
+      "description": "디시 앱 자체 업데이트 안내를 Morphe 설정에서 끄거나 켭니다.",
+      "default": true,
+      "category": null,
+      "dependencies": [
+        "ResourcePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "com.dcinside.app.android",
           "name": "DC Inside",
           "description": null,
           "apkFileType": "APK",
@@ -71,14 +114,28 @@
       "compatiblePackages": [
         {
           "packageName": "com.dcinside.app.android",
-          "name": "DC Inside",
+          "name": "DC Inside reviewed optional features",
           "description": null,
           "apkFileType": "APK",
           "appIconColor": "#495C9E",
           "signatures": null,
           "targets": [
             {
-              "version": null,
+              "version": "5.3.6",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.18",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.21",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -100,14 +157,28 @@
       "compatiblePackages": [
         {
           "packageName": "com.dcinside.app.android",
-          "name": "DC Inside",
+          "name": "DC Inside reviewed optional features",
           "description": null,
           "apkFileType": "APK",
           "appIconColor": "#495C9E",
           "signatures": null,
           "targets": [
             {
-              "version": null,
+              "version": "5.3.6",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.18",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            },
+            {
+              "version": "5.3.21",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,

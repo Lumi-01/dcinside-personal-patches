@@ -17,10 +17,19 @@ val authorInfoPatch = bytecodePatch(
     description = "앱의 Morphe 설정에서 계정 아이디와 내장 IP 대역표의 추정 정보를 표시합니다.",
     default = true,
 ) {
-    compatibleWith(compatibility)
+    compatibleWith(legacyFeatureCompatibility)
     dependsOn(dcInsidePersonalPatch)
 
     execute {
+        val appCreate = Fingerprint(
+            definingClass = "Lcom/dcinside/app/Application;",
+            name = "onCreate",
+            returnType = "V",
+        ).method
+        appCreate.addInstructions(0, """
+            const/4 v0, 0x4
+            invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
+        """.trimIndent())
         val target = dcTarget()
         val header = target.fingerprint(
             definingClass = "Lcom/dcinside/app/view/PostReadHeaderView;",

@@ -26,12 +26,45 @@ internal val compatibility = Compatibility(
     )
 )
 
+internal val legacyFeatureCompatibility = Compatibility(
+    name = "DC Inside reviewed optional features",
+    packageName = "com.dcinside.app.android",
+    apkFileType = ApkFileType.APK,
+    appIconColor = 0x495C9E,
+    targets = listOf(
+        AppTarget(version = "5.3.6"),
+        AppTarget(version = "5.3.18"),
+        AppTarget(version = "5.3.21"),
+    ),
+)
+
 private const val CONFIG = "Lcom/dcinside/app/util/Rr;"
 private const val CERT = "Llocal/privacy/SignerCompat;"
 private const val JNI_DIGEST = "java/security/MessageDigest"
 private const val LOCAL_DIGEST = "local/privacy/MessageDigest"
 
+private val morpheSettingsResources = resourcePatch {
+    execute {
+        document("AndroidManifest.xml").use { document ->
+            val application = document.documentElement.getElementsByTagName("application").item(0) as Element
+            val hasActivity = (0 until application.getElementsByTagName("activity").length).any { index ->
+                val activity = application.getElementsByTagName("activity").item(index) as Element
+                activity.getAttribute("android:name") == "local.privacy.MorpheSettingsActivity"
+            }
+            if (!hasActivity) {
+                val activity = document.createElement("activity")
+                activity.setAttribute("android:name", "local.privacy.MorpheSettingsActivity")
+                activity.setAttribute("android:exported", "false")
+                activity.setAttribute("android:excludeFromRecents", "true")
+                activity.setAttribute("android:theme", "@android:style/Theme.DeviceDefault.Light")
+                application.appendChild(activity)
+            }
+        }
+    }
+}
+
 private val nativeCertificatePatch = resourcePatch {
+    dependsOn(morpheSettingsResources)
     execute {
         val prefixTable = Class.forName("dev.lumi.dcinside.DcInsidePatchKt")
             .getResourceAsStream("/dcinside/lumi_ip_prefixes.txt")
@@ -53,12 +86,6 @@ private val nativeCertificatePatch = resourcePatch {
         }
         document("AndroidManifest.xml").use { document ->
             val application = document.documentElement.getElementsByTagName("application").item(0) as Element
-            val activity = document.createElement("activity")
-            activity.setAttribute("android:name", "local.privacy.MorpheSettingsActivity")
-            activity.setAttribute("android:exported", "false")
-            activity.setAttribute("android:excludeFromRecents", "true")
-            activity.setAttribute("android:theme", "@android:style/Theme.DeviceDefault.Light")
-            application.appendChild(activity)
             val providers = document.getElementsByTagName("provider")
             for (index in providers.length - 1 downTo 0) {
                 val item = providers.item(index) as Element
@@ -180,6 +207,84 @@ private val nativeCertificatePatch = resourcePatch {
     }
 }
 
+/** Keeps the update-notice preference independently patchable across app class-name changes. */
+@Suppress("unused")
+val updateNoticePatch = bytecodePatch(
+    name = "디시 앱 업데이트 안내 설정",
+    description = "디시 앱 자체 업데이트 안내를 Morphe 설정에서 끄거나 켭니다.",
+    default = true
+) {
+    compatibleWith(compatibility)
+    dependsOn(morpheSettingsResources)
+    extendWith("extensions/extension.mpe")
+    execute {
+        val appCreate = Fingerprint(
+            definingClass = "Lcom/dcinside/app/Application;",
+            name = "onCreate",
+            returnType = "V"
+        ).method
+        if (appCreate.implementation!!.instructions.none { instruction ->
+                (instruction as? ReferenceInstruction)?.reference.toString() ==
+                    "Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V"
+            }) {
+            appCreate.addInstructions(0,
+                "invoke-static {p0}, Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V")
+        }
+        appCreate.addInstructions(0, """
+            const/16 v0, 0x20
+            invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
+        """.trimIndent())
+
+        val isRepackagedUpdateFlow = classDefByOrNull("Lpm5;") != null
+        val updateProfile = if (isRepackagedUpdateFlow) null else dcTarget()
+        val updateOwner = if (isRepackagedUpdateFlow) "Lpm5;"
+            else updateProfile!!.type("Lcom/dcinside/app/main/A0;")
+        val updateName = if (isRepackagedUpdateFlow) "O"
+            else updateProfile!!.name("Lcom/dcinside/app/main/A0;", "n2")
+        val updateGate = Fingerprint(
+            definingClass = updateOwner,
+            name = updateName,
+            parameters = listOf("Ljava/lang/String;"),
+            returnType = "Z",
+            custom = if (isRepackagedUpdateFlow) ({ method, _ ->
+                val strings = method.implementation?.instructions?.mapNotNull { instruction ->
+                    ((instruction as? ReferenceInstruction)?.reference as? com.android.tools.smali.dexlib2.iface.reference.StringReference)?.string
+                }?.toSet().orEmpty()
+                "updateIgnoreCase" in strings && "popup_interval_update" in strings
+            }) else null
+        ).method
+        val isStatic = updateGate.accessFlags and 0x8 != 0
+        val implementation = updateGate.implementation ?: error("Update notice decision method has no body")
+        val parameterRegisters = updateGate.parameterTypes.size + if (isStatic) 0 else 1
+        val localRegisters = implementation.registerCount - parameterRegisters
+        check(localRegisters > 0) { "Update notice decision method has no scratch register" }
+        val scratch = localRegisters - 1
+        updateGate.addInstructionsWithLabels(0, """
+            const-string v$scratch, "disable_update_notice"
+            invoke-static {v$scratch}, Llocal/privacy/SettingsState;->get(Ljava/lang/String;)Z
+            move-result v$scratch
+            if-eqz v$scratch, :keep_update_notice_check
+            const/4 v$scratch, 0x0
+            return v$scratch
+            :keep_update_notice_check
+            nop
+        """.trimIndent())
+
+        // 5.3.27 moved the settings overview fragment into the default package.
+        // Earlier app versions add this link in the main clean-up patch instead.
+        if (classDefByOrNull("Llda;") != null) {
+            val settingsView = Fingerprint(
+                definingClass = "Llda;",
+                name = "onViewCreated",
+                parameters = listOf("Landroid/view/View;", "Landroid/os/Bundle;"),
+                returnType = "V"
+            ).method
+            settingsView.addInstructions(0,
+                "invoke-static {p1}, Llocal/privacy/MorpheSettingsActivity;->bindSettingsShortcut(Landroid/view/View;)V")
+        }
+    }
+}
+
 /** Does not contain the APK, keys, or proprietary source. */
 @Suppress("unused")
 val dcInsidePersonalPatch = bytecodePatch(
@@ -191,6 +296,10 @@ val dcInsidePersonalPatch = bytecodePatch(
     dependsOn(nativeCertificatePatch)
     extendWith("extensions/extension.mpe")
     execute {
+        if (classDefByOrNull("Lvi9;") != null && classDefByOrNull("Lc22;") != null &&
+            classDefByOrNull("Lfwa;") != null) {
+            applyRepackagedCleanup()
+        } else {
         val target = dcTarget()
         val postIdGetter = classDefBy("Lcom/dcinside/app/response/PostItem;").stringGetters("user_id").sorted().first()
         val commentIdGetter = classDefBy("Lcom/dcinside/app/response/m;").stringGetters("user_id").sorted().first()
@@ -200,6 +309,10 @@ val dcInsidePersonalPatch = bytecodePatch(
         val appCreate = target.fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "onCreate", returnType = "V").method
         appCreate.addInstructions(0, "invoke-static {p0}, $CERT->init(Landroid/content/Context;)V")
         appCreate.addInstructions(0, "invoke-static {p0}, Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V")
+        appCreate.addInstructions(0, """
+            const/16 v0, 0x18
+            invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
+        """.trimIndent())
         val configValueSource = classDefBy("Lcom/google/firebase/remoteconfig/internal/y;").methods.single {
             it.parameterTypes.isEmpty() && it.returnType == "I" &&
                 it.implementation?.instructions?.toList()?.let { code ->
@@ -455,5 +568,95 @@ val dcInsidePersonalPatch = bytecodePatch(
         """.trimIndent())
         target.fingerprint(definingClass = "Lcom/dcinside/app/Application;", name = "p", returnType = "V")
             .method.addInstructions(0, "return-void")
+        }
     }
+}
+
+/** Reviewed path for the 5.3.27+ default-package app layout. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup() {
+    val appCreate = Fingerprint(
+        definingClass = "Lcom/dcinside/app/Application;",
+        name = "onCreate",
+        returnType = "V",
+    ).method
+    val appInstructions = appCreate.implementation?.instructions
+        ?: error("Application initialization method has no body")
+    if (appInstructions.none { instruction ->
+            (instruction as? ReferenceInstruction)?.reference.toString() ==
+                "Llocal/privacy/SignerCompat;->init(Landroid/content/Context;)V"
+        }) {
+        appCreate.addInstructions(0,
+            "invoke-static {p0}, Llocal/privacy/SignerCompat;->init(Landroid/content/Context;)V")
+    }
+    if (appInstructions.none { instruction ->
+            (instruction as? ReferenceInstruction)?.reference.toString() ==
+                "Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V"
+        }) {
+        appCreate.addInstructions(0,
+            "invoke-static {p0}, Llocal/privacy/SettingsState;->init(Landroid/content/Context;)V")
+    }
+    appCreate.addInstructions(0, """
+        const/16 v0, 0x8
+        invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
+    """.trimIndent())
+
+    val settingsView = Fingerprint(
+        definingClass = "Llda;",
+        name = "onViewCreated",
+        parameters = listOf("Landroid/view/View;", "Landroid/os/Bundle;"),
+        returnType = "V",
+    ).method
+    settingsView.addInstructions(0,
+        "invoke-static {p1}, Llocal/privacy/MorpheSettingsActivity;->bindSettingsShortcut(Landroid/view/View;)V")
+
+    // Remote-config ad placements are selected through vi9.b(key). Keep the
+    // original path when the in-app switch is off; otherwise return no slots.
+    val adPlacements = Fingerprint(
+        definingClass = "Lvi9;",
+        name = "b",
+        parameters = listOf("Ljava/lang/String;"),
+        returnType = "Ljava/util/List;",
+    ).method
+    adPlacements.addInstructionsWithLabels(0, """
+        const-string v0, "block_app_ad_loaders"
+        invoke-static {v0}, Llocal/privacy/SettingsState;->get(Ljava/lang/String;)Z
+        move-result v0
+        if-eqz v0, :keep_remote_ad_placements
+        invoke-static {}, Ljava/util/Collections;->emptyList()Ljava/util/List;
+        move-result-object p0
+        return-object p0
+        :keep_remote_ad_placements
+        nop
+    """.trimIndent())
+
+    val intercept = Fingerprint(
+        definingClass = "Lc22;",
+        name = "shouldInterceptRequest",
+        parameters = listOf("Landroid/webkit/WebView;", "Landroid/webkit/WebResourceRequest;"),
+        returnType = "Landroid/webkit/WebResourceResponse;",
+    ).method
+    intercept.addInstructionsWithLabels(0, """
+        invoke-static {p2}, Llocal/privacy/WebResourceBlocker;->intercept(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
+        move-result-object v0
+        if-eqz v0, :continue_web_request
+        return-object v0
+        :continue_web_request
+        nop
+    """.trimIndent())
+
+    // fwa's tenth constructor parameter controls whether Naver analytics tags
+    // are appended to the post HTML. Preserve its requested value unless blocked.
+    val webBuilder = Fingerprint(
+        definingClass = "Lfwa;",
+        name = "<init>",
+        parameters = listOf(
+            "Landroid/content/Context;", "Lorg/jsoup/nodes/j;", "Z", "Z", "Z", "I",
+            "Laec;", "Z", "Ljava/lang/Float;", "Z", "Z", "Z",
+        ),
+        returnType = "V",
+    ).method
+    webBuilder.addInstructions(0, """
+        invoke-static/range {p10 .. p10}, Llocal/privacy/WebResourceBlocker;->allowNaverAnalytics(Z)Z
+        move-result p10
+    """.trimIndent())
 }

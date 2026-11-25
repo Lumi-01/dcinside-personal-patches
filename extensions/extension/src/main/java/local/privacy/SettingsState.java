@@ -10,10 +10,11 @@ public final class SettingsState {
         "hide_home_ranking", "hide_home_live_best", "hide_home_recommended_posts",
         "hide_page_indicator", "hide_author_auto_image", "show_author_id", "show_ip_info",
         "collapse_long_ip_info", "block_naver_web_tracking", "block_web_ad_requests",
-        "reduce_config_refresh"
+        "reduce_config_refresh", "disable_update_notice", "block_app_ad_loaders"
     };
-    private static final int DEFAULTS = (1 << 10) | (1 << 11) | (1 << 12);
+    private static final int DEFAULTS = (1 << 10) | (1 << 11) | (1 << 12) | (1 << 15);
     private static volatile int enabled;
+    private static volatile int supportedFeatures;
     private static volatile SharedPreferences preferences;
     private static volatile Context applicationContext;
     // SharedPreferences holds weak listener references: keep this one for process lifetime.
@@ -58,11 +59,22 @@ public final class SettingsState {
             case "block_naver_web_tracking": return 1 << 11;
             case "block_web_ad_requests": return 1 << 12;
             case "reduce_config_refresh": return 1 << 13;
+            case "disable_update_notice": return 1 << 14;
+            case "block_app_ad_loaders": return 1 << 15;
             default: return 0;
         }
     }
 
     public static Context context() { return applicationContext; }
+
+    /** Called from only the patch adapters that are present in this APK. */
+    public static void addSupportedFeatures(int features) {
+        supportedFeatures |= features;
+    }
+
+    public static boolean supports(int feature) {
+        return (supportedFeatures & feature) != 0;
+    }
 
     public static boolean get(String key) {
         int mask = bit(key);

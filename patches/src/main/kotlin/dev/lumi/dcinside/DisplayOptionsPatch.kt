@@ -18,10 +18,19 @@ val homeDisplayOptionsPatch = bytecodePatch(
     description = "앱의 Morphe 설정에서 홈 화면 영역을 각각 숨길 수 있습니다.",
     default = true,
 ) {
-    compatibleWith(compatibility)
+    compatibleWith(legacyFeatureCompatibility)
     dependsOn(dcInsidePersonalPatch)
 
     execute {
+        val appCreate = Fingerprint(
+            definingClass = "Lcom/dcinside/app/Application;",
+            name = "onCreate",
+            returnType = "V",
+        ).method
+        appCreate.addInstructions(0, """
+            const/4 v0, 0x1
+            invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
+        """.trimIndent())
         val target = dcTarget()
         val update = target.fingerprint(
             definingClass = "Lcom/dcinside/app/main/adapter/f;",
@@ -43,10 +52,19 @@ val hidePageIndicatorsPatch = bytecodePatch(
     description = "앱의 Morphe 설정에서 글 목록과 검색 결과의 Page N 표시를 숨길 수 있습니다.",
     default = true,
 ) {
-    compatibleWith(compatibility)
+    compatibleWith(legacyFeatureCompatibility)
     dependsOn(dcInsidePersonalPatch)
 
     execute {
+        val appCreate = Fingerprint(
+            definingClass = "Lcom/dcinside/app/Application;",
+            name = "onCreate",
+            returnType = "V",
+        ).method
+        appCreate.addInstructions(0, """
+            const/4 v0, 0x2
+            invoke-static {v0}, Llocal/privacy/SettingsState;->addSupportedFeatures(I)V
+        """.trimIndent())
         val target = dcTarget()
         target.fingerprint(
             definingClass = "Lcom/dcinside/app/post/X2;",
