@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-11-25T17:43:56",
+  "created_at": "2026-11-25T17:44:29",
   "description": "## [1.2.7](https://github.com/Lumi-01/dcinside-personal-patches/compare/v1.2.6...v1.2.7) (2026-11-25)\n\n### 🐛 Bug Fixes\n\n* add generated patch list section to README ([b892282](https://github.com/Lumi-01/dcinside-personal-patches/commit/b89228254d7455ad2ff52a7132b0f82edc2f415c))\n* make Gradle wrapper executable in release workflow ([a5ac623](https://github.com/Lumi-01/dcinside-personal-patches/commit/a5ac623a9099259622f587d6b8c4117a719a749f))\n* support DC 5.3.27 update settings ([bec8c0c](https://github.com/Lumi-01/dcinside-personal-patches/commit/bec8c0c3adc286948f24e9153144b2982c303e75))",
   "download_url": "https://github.com/Lumi-01/dcinside-personal-patches/releases/download/v1.2.7/patches-1.2.7.mpp",
   "signature_download_url": "",
