@@ -24,6 +24,21 @@ This bundle is separate from the manually rebuilt personal APK. See [MAINTAINING
 ## Available patches
 
 <!-- PATCHES_START -->
+> **[v1.2.7](https://github.com/Lumi-01/dcinside-personal-patches/releases/tag/v1.2.7)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;5 patches total
+<details open>
+<summary>📦 DC Inside&nbsp;&nbsp;•&nbsp;&nbsp;5 patches</summary>
+<br>
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [DC Inside personal clean-up](#dc-inside-personal-clean-up) | Disable app ad loaders and keep the locally signed build usable. |  |
+| [글 목록 페이지 표시 설정](#) | 앱의 Morphe 설정에서 글 목록과 검색 결과의 Page N 표시를 숨길 수 있습니다. |  |
+| [디시 앱 업데이트 안내 설정](#) | 디시 앱 자체 업데이트 안내를 Morphe 설정에서 끄거나 켭니다. |  |
+| [앱 안에서 홈 화면 설정](#) | 앱의 Morphe 설정에서 홈 화면 영역을 각각 숨길 수 있습니다. |  |
+| [작성자 아이디·IP 정보](#ip) | 앱의 Morphe 설정에서 계정 아이디와 내장 IP 대역표의 추정 정보를 표시합니다. |  |
+
+</details>
+
 <!-- PATCHES_END -->
 
 ## Build and use
