@@ -21,6 +21,11 @@ The [Ample DC Inside patch catalog](https://morphe-patches.software/?app=com.dci
 
 This bundle is separate from the manually rebuilt personal APK. See [MAINTAINING.md](MAINTAINING.md) for the feature checklist and gaps that must be verified before calling a newer version supported. Do not combine it with another DC Inside patch source without checking conflicts.
 
+## Available patches
+
+<!-- PATCHES_START -->
+<!-- PATCHES_END -->
+
 ## Build and use
 
 Morphe's official Gradle template requires GitHub Packages authentication with `read:packages`. Set `gpr.user` and `gpr.key` in your **user-level** Gradle properties, as described in the [Morphe setup guide](https://github.com/MorpheApp/morphe-patcher/blob/main/docs/2_1_setup.md), then run:
