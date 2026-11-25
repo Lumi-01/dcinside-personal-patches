@@ -48,7 +48,7 @@ val homeDisplayOptionsPatch = bytecodePatch(
             ).method
         }
         update.addInstructions(0, """
-            invoke-static {p1}, Llocal/privacy/HomeFilter;->filter(Ljava/util/List;)Ljava/util/List;
+            invoke-static/range {p1 .. p1}, Llocal/privacy/HomeFilter;->filter(Ljava/util/List;)Ljava/util/List;
             move-result-object p1
         """.trimIndent())
     }
@@ -106,7 +106,7 @@ private fun MutableMethod.applyPageIndicator() {
     check(returns.isNotEmpty()) { "Page row binder return path changed" }
     returns.asReversed().forEach { index ->
         addInstructions(index, """
-            invoke-static {p0}, Llocal/privacy/PageIndicator;->applyToPageItem(Ljava/lang/Object;)V
+            invoke-static/range {p0 .. p0}, Llocal/privacy/PageIndicator;->applyToPageItem(Ljava/lang/Object;)V
         """.trimIndent())
     }
 }

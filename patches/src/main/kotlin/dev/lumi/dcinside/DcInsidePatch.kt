@@ -370,7 +370,7 @@ val dcInsidePersonalPatch = bytecodePatch(
         target.fingerprint(definingClass = "Lcom/dcinside/app/wv/a;", name = "shouldInterceptRequest",
             parameters = listOf("Landroid/webkit/WebView;", "Landroid/webkit/WebResourceRequest;"),
             returnType = "Landroid/webkit/WebResourceResponse;").method.addInstructionsWithLabels(0, """
-                invoke-static {p2}, Llocal/privacy/WebResourceBlocker;->intercept(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
+                invoke-static/range {p2 .. p2}, Llocal/privacy/WebResourceBlocker;->intercept(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
                 move-result-object v0
                 if-eqz v0, :continue_web_request
                 return-object v0
@@ -639,7 +639,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         parameters = listOf("Ljava/util/List;"),
         returnType = "V",
     ).method.addInstructions(0, """
-        invoke-static {p1}, Llocal/privacy/HomeFilter;->filterAds(Ljava/util/List;)Ljava/util/List;
+        invoke-static/range {p1 .. p1}, Llocal/privacy/HomeFilter;->filterAds(Ljava/util/List;)Ljava/util/List;
         move-result-object p1
     """.trimIndent())
 
@@ -650,7 +650,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         parameters = listOf("Ldw5;", "Ls22;"),
         returnType = "V",
     ).method.collapseBeforeReturn("""
-        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseReadFooterAds(Landroid/view/View;)V
+        invoke-static/range {p0 .. p0}, Llocal/privacy/AdSlotCollapser;->collapseReadFooterAds(Landroid/view/View;)V
     """.trimIndent())
     Fingerprint(
         definingClass = "Lx98;",
@@ -658,7 +658,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         parameters = listOf("Ldw5;", "Ls22;"),
         returnType = "V",
     ).method.collapseBeforeReturn("""
-        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseReadFooterAds(Landroid/view/View;)V
+        invoke-static/range {p0 .. p0}, Llocal/privacy/AdSlotCollapser;->collapseReadFooterAds(Landroid/view/View;)V
     """.trimIndent())
     Fingerprint(
         definingClass = "Lg78;",
@@ -666,7 +666,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         parameters = emptyList(),
         returnType = "V",
     ).method.collapseBeforeReturn("""
-        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseGalleryAds(Ljava/lang/Object;)V
+        invoke-static/range {p0 .. p0}, Llocal/privacy/AdSlotCollapser;->collapseGalleryAds(Ljava/lang/Object;)V
     """.trimIndent())
     Fingerprint(
         definingClass = "Lg78;",
@@ -674,7 +674,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         parameters = listOf("Ljava/lang/String;"),
         returnType = "V",
     ).method.collapseBeforeReturn("""
-        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapseGalleryAds(Ljava/lang/Object;)V
+        invoke-static/range {p0 .. p0}, Llocal/privacy/AdSlotCollapser;->collapseGalleryAds(Ljava/lang/Object;)V
     """.trimIndent())
     Fingerprint(
         definingClass = "Lq58;",
@@ -682,7 +682,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         parameters = listOf("Ldw5;", "Ljava/lang/String;", "I", "Z", "Lqc;"),
         returnType = "V",
     ).method.collapseBeforeReturn("""
-        invoke-static {p0}, Llocal/privacy/AdSlotCollapser;->collapsePageAd(Ljava/lang/Object;)V
+        invoke-static/range {p0 .. p0}, Llocal/privacy/AdSlotCollapser;->collapsePageAd(Ljava/lang/Object;)V
     """.trimIndent())
 
     val intercept = Fingerprint(
@@ -692,7 +692,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.applyRepackagedCleanup
         returnType = "Landroid/webkit/WebResourceResponse;",
     ).method
     intercept.addInstructionsWithLabels(0, """
-        invoke-static {p2}, Llocal/privacy/WebResourceBlocker;->intercept(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
+        invoke-static/range {p2 .. p2}, Llocal/privacy/WebResourceBlocker;->intercept(Landroid/webkit/WebResourceRequest;)Landroid/webkit/WebResourceResponse;
         move-result-object v0
         if-eqz v0, :continue_web_request
         return-object v0
