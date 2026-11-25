@@ -1,3 +1,10 @@
+## [1.2.8](https://github.com/Lumi-01/dcinside-personal-patches/compare/v1.2.7...v1.2.8) (2026-11-25)
+
+### 🐛 Bug Fixes
+
+* support DC 5.3.27 options and collapse empty ad slots ([19f2299](https://github.com/Lumi-01/dcinside-personal-patches/commit/19f2299c672d58ea5d6aa6904f931d7dd97a4974))
+* use range-safe invokes for 5.3.27 adapters ([e370f2d](https://github.com/Lumi-01/dcinside-personal-patches/commit/e370f2d89b74fccdb6b83fe2624d9f63db063f29))
+
 ## [1.2.7](https://github.com/Lumi-01/dcinside-personal-patches/compare/v1.2.6...v1.2.7) (2026-11-25)
 
 ### 🐛 Bug Fixes
