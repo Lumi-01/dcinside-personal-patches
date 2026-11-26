@@ -201,7 +201,9 @@ private val nativeCertificatePatch = resourcePatch {
                 val name = dimension.getAttribute("name")
                 if (name in adDimensions) {
                     check(matched.add(name)) { "Duplicate ad dimension: $name" }
-                    dimension.textContent = "0dp"
+                    // These app views treat 0 as "unset" and restore a 50–250dp fallback.
+                    // Keep the resource positive so empty ad slots stay at a single pixel.
+                    dimension.textContent = "1px"
                 }
             }
             check(matched == adDimensions) { "Ad dimensions changed: missing ${adDimensions - matched}" }
