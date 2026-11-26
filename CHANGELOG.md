@@ -1,3 +1,9 @@
+## [1.2.9](https://github.com/Lumi-01/dcinside-personal-patches/compare/v1.2.8...v1.2.9) (2026-11-26)
+
+### 🐛 Bug Fixes
+
+* keep disabled post ad slots collapsed ([ba2a6ff](https://github.com/Lumi-01/dcinside-personal-patches/commit/ba2a6ff99d477d8995e2dd45d0d97f6ea5bf6bdb))
+
 ## [1.2.8](https://github.com/Lumi-01/dcinside-personal-patches/compare/v1.2.7...v1.2.8) (2026-11-25)
 
 ### 🐛 Bug Fixes
